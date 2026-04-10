@@ -8,15 +8,17 @@
 }
 
 body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-header { padding: 40px 20px 20px; background: linear-gradient(to bottom, #000, var(--bg-color)); text-align: center; position: relative; }
 
-/* NEU: Bild Styling */
+/* FIX: padding-top von 40px auf 70px erhöht, damit die Überschrift tiefer rutscht */
+header { padding: 70px 20px 20px; background: linear-gradient(to bottom, #000, var(--bg-color)); text-align: center; position: relative; }
+
+/* Bild Styling für das Logo */
 .app-logo {
     max-width: 120px;
     height: auto;
-    border-radius: 15px; /* Macht die Ecken leicht rund */
+    border-radius: 15px; 
     margin-bottom: 15px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.4); /* Leichter 3D Effekt */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4); 
 }
 
 h1 { margin: 0; font-size: 24px; color: var(--accent-color); }
@@ -31,7 +33,9 @@ input { width: 100%; padding: 12px; margin-top: 5px; background: var(--card-bg);
 .btn-main, .btn-secondary { border-radius: 10px; width: 100%; font-size: 16px; cursor: pointer; font-weight: bold; padding: 15px; box-sizing: border-box; }
 .btn-main { background-color: var(--accent-color); color: white; border: none; margin-top: 25px; }
 .btn-secondary { background-color: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); margin-top: 15px; }
-.btn-back { background: none; border: none; color: var(--secondary-text); font-size: 16px; position: absolute; left: 10px; top: 35px; padding: 10px; cursor: pointer; z-index: 10; }
+
+/* FIX: top von 35px auf 15px verringert, damit der Button weiter oben klebt */
+.btn-back { background: none; border: none; color: var(--secondary-text); font-size: 16px; position: absolute; left: 10px; top: 15px; padding: 10px; cursor: pointer; z-index: 10; }
 
 .tag-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .tag-list li { background: var(--card-bg); padding: 8px 12px; border-radius: 20px; font-size: 14px; border: 1px solid #444; }
