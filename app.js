@@ -11,6 +11,13 @@ window.onload = function() {
 function navigateTo(viewId) {
     document.querySelectorAll('.view').forEach(view => view.style.display = 'none');
     document.getElementById(viewId).style.display = 'block';
+    
+    // Wenn wir ins Setup gehen, Felder mit aktuellen Werten füllen
+    if(viewId === 'view-setup') {
+        document.getElementById('setup-name').value = currentTasting.name;
+        document.getElementById('setup-date').value = currentTasting.date;
+        updateParticipantList();
+    }
     window.scrollTo(0, 0);
 }
 
@@ -57,6 +64,7 @@ function startTastingGrid() {
     document.getElementById('grid-title').innerText = currentTasting.name;
     updateDatalists();
     renderGrid();
+    saveTasting(); // Speichert den Stand (inkl. neuer Teilnehmer)
     navigateTo('view-grid');
 }
 
@@ -72,22 +80,17 @@ function renderGrid() {
     if (cols.length > 0) {
         let currentFlight = cols[0].f;
         let span = 0;
-
         cols.forEach((c) => {
             if (c.f !== currentFlight) {
                 flightRow += `<th colspan="${span}" class="flight-header">Flight ${currentFlight}</th>`;
                 currentFlight = c.f; span = 1;
             } else { span++; }
-
             let title = c.w.name + (c.w.age ? ` (${c.w.age}J)` : '');
-            whiskyRow += `<th onclick="openWhiskyModal(${c.idx})" class="whisky-header">
-                <strong>${title}</strong><br><span style="font-size:11px; color:#aaa;">✏️ Bearbeiten</span>
-            </th>`;
+            whiskyRow += `<th onclick="openWhiskyModal(${c.idx})" class="whisky-header"><strong>${title}</strong><br>✏️</th>`;
         });
         flightRow += `<th colspan="${span}" class="flight-header">Flight ${currentFlight}</th>`;
     }
-
-    flightRow += `<th rowspan="2" style="background:#111;"><button class="add-whisky-btn" onclick="openWhiskyModal(null)">+ Whisky</button></th></tr>`;
+    flightRow += `<th rowspan="2" style="background:#111;"><button class="add-whisky-btn" onclick="openWhiskyModal(null)">+🥃</button></th></tr>`;
     whiskyRow += `</tr>`;
 
     let html = `<thead>${flightRow}${whiskyRow}</thead><tbody>`;
@@ -97,368 +100,145 @@ function renderGrid() {
         cols.forEach(c => {
             let r = currentTasting.ratings[pName]?.[c.idx];
             let overallValue = r && r.overall ? r.overall : '';
-            html += `<td>
-                <div style="display:flex; align-items:center; justify-content:center;">
-                    <input type="number" step="0.1" class="inline-input" placeholder="-" value="${overallValue}" 
-                           onchange="updateInlineRating('${pName}', ${c.idx}, this.value)">
-                    <span class="edit-icon" onclick="openRatingModal('${pName}', ${c.idx})">📝</span>
-                </div>
-            </td>`;
+            html += `<td><input type="number" step="0.1" class="inline-input" value="${overallValue}" onchange="updateInlineRating('${pName}', ${c.idx}, this.value)"> <span onclick="openRatingModal('${pName}', ${c.idx})">📝</span></td>`;
         });
         html += `<td></td></tr>`;
     });
-    
-    html += `</tbody>`;
-    table.innerHTML = html;
+    table.innerHTML = html + `</tbody>`;
 }
 
 function updateInlineRating(participant, whiskyIndex, value) {
     if(!currentTasting.ratings[participant]) currentTasting.ratings[participant] = {};
-    if(!currentTasting.ratings[participant][whiskyIndex]) {
-        currentTasting.ratings[participant][whiskyIndex] = { nose: '', taste: '', finish: '', overall: '' };
-    }
+    if(!currentTasting.ratings[participant][whiskyIndex]) currentTasting.ratings[participant][whiskyIndex] = { nose: '', taste: '', finish: '', overall: '' };
     currentTasting.ratings[participant][whiskyIndex].overall = value;
     saveTasting(); 
 }
 
-// --- MODALS STEUERN ---
+// --- MODALS ---
 function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
 function openWhiskyModal(index) {
     editingWhiskyIndex = index;
     if(index !== null) {
         let w = currentTasting.whiskies[index];
-        document.getElementById('modal-whisky-title').innerText = "Whisky bearbeiten";
-        ['name', 'distillery', 'type', 'country', 'age', 'abv', 'flight'].forEach(key => {
-            document.getElementById('w-'+key).value = w[key] || '';
-        });
+        ['name', 'distillery', 'type', 'country', 'age', 'abv', 'flight'].forEach(key => document.getElementById('w-'+key).value = w[key] || '');
     } else {
-        document.getElementById('modal-whisky-title').innerText = "Neuer Whisky";
         ['w-name', 'w-distillery', 'w-type', 'w-country', 'w-age', 'w-abv'].forEach(id => document.getElementById(id).value = '');
-        let highestFlight = 1;
-        if(currentTasting.whiskies.length > 0) highestFlight = Math.max(...currentTasting.whiskies.map(w => parseInt(w.flight) || 1));
-        document.getElementById('w-flight').value = highestFlight;
+        document.getElementById('w-flight').value = currentTasting.whiskies.length > 0 ? Math.max(...currentTasting.whiskies.map(w => parseInt(w.flight))) : 1;
     }
     document.getElementById('modal-whisky').style.display = "block";
 }
 
 function saveWhiskyFromModal() {
-    let wName = document.getElementById('w-name').value;
-    if(!wName) return alert("Name fehlt!");
-
     let wData = {
-        name: wName, distillery: document.getElementById('w-distillery').value,
+        name: document.getElementById('w-name').value, distillery: document.getElementById('w-distillery').value,
         type: document.getElementById('w-type').value, country: document.getElementById('w-country').value,
         age: document.getElementById('w-age').value, abv: document.getElementById('w-abv').value,
         flight: document.getElementById('w-flight').value || 1
     };
-
+    if(!wData.name) return alert("Name fehlt!");
     if(editingWhiskyIndex !== null) currentTasting.whiskies[editingWhiskyIndex] = wData;
     else { currentTasting.whiskies.push(wData); saveToMasterDB(wData); }
-
-    closeModal('modal-whisky');
-    saveTasting();
-    renderGrid();
+    closeModal('modal-whisky'); saveTasting(); renderGrid();
 }
 
-function openRatingModal(participantName, whiskyIndex) {
-    currentRatingContext = { participant: participantName, whiskyIndex: whiskyIndex };
-    let whisky = currentTasting.whiskies[whiskyIndex];
-    let rating = currentTasting.ratings[participantName]?.[whiskyIndex] || { nose: '', taste: '', finish: '', overall: '' };
-
-    document.getElementById('modal-rating-subtitle').innerText = `${participantName} bewertet: ${whisky.name}`;
-    ['nose', 'taste', 'finish', 'overall'].forEach(key => document.getElementById('r-'+key).value = rating[key]);
+function openRatingModal(p, idx) {
+    currentRatingContext = { participant: p, whiskyIndex: idx };
+    let r = currentTasting.ratings[p]?.[idx] || { nose: '', taste: '', finish: '', overall: '' };
+    document.getElementById('modal-rating-subtitle').innerText = `${p}: ${currentTasting.whiskies[idx].name}`;
+    ['nose', 'taste', 'finish', 'overall'].forEach(k => document.getElementById('r-'+k).value = r[k]);
     document.getElementById('modal-rating').style.display = "block";
 }
 
 function saveRatingFromModal() {
-    let p = currentRatingContext.participant;
-    let wIdx = currentRatingContext.whiskyIndex;
+    let p = currentRatingContext.participant; let idx = currentRatingContext.whiskyIndex;
     if(!currentTasting.ratings[p]) currentTasting.ratings[p] = {};
-
-    currentTasting.ratings[p][wIdx] = {
+    currentTasting.ratings[p][idx] = {
         nose: document.getElementById('r-nose').value, taste: document.getElementById('r-taste').value,
         finish: document.getElementById('r-finish').value, overall: document.getElementById('r-overall').value
     };
-
-    closeModal('modal-rating');
-    saveTasting();
-    renderGrid();
+    closeModal('modal-rating'); saveTasting(); renderGrid();
 }
 
-// --- DATENBANK & SPEICHERN ---
-function saveToMasterDB(wData) {
+// --- DB ---
+function saveToMasterDB(w) {
     let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
-    if(!db.find(w => w.name === wData.name)) { db.push(wData); localStorage.setItem('whiskyDB', JSON.stringify(db)); }
+    if(!db.find(x => x.name === w.name)) { db.push(w); localStorage.setItem('whiskyDB', JSON.stringify(db)); }
 }
-
-function autoFillWhisky(input) {
-    let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
-    let known = db.find(w => w.name === input.value);
-    if (known) {
-        ['distillery', 'type', 'country', 'age', 'abv'].forEach(key => {
-            document.getElementById('w-'+key).value = known[key] || '';
-        });
-    }
+function autoFillWhisky(i) {
+    let w = (JSON.parse(localStorage.getItem('whiskyDB')) || []).find(x => x.name === i.value);
+    if(w) ['distillery', 'type', 'country', 'age', 'abv'].forEach(k => document.getElementById('w-'+k).value = w[k] || '');
 }
-
 function updateDatalists() {
     let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
-    document.getElementById('known-whiskies').innerHTML = db.map(w => `<option value="${w.name}"></option>`).join('');
-    let dists = [...new Set(db.map(w => w.distillery).filter(Boolean))];
-    document.getElementById('known-distilleries').innerHTML = dists.map(d => `<option value="${d}"></option>`).join('');
+    document.getElementById('known-whiskies').innerHTML = db.map(w => `<option value="${w.name}">`).join('');
 }
 
 function saveTasting() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    let existingIndex = tastings.findIndex(t => t.id === currentTasting.id);
-    if(existingIndex >= 0) tastings[existingIndex] = currentTasting;
-    else tastings.push(currentTasting);
+    let idx = tastings.findIndex(t => t.id === currentTasting.id);
+    if(idx >= 0) tastings[idx] = currentTasting; else tastings.push(currentTasting);
     localStorage.setItem('whiskyTastings', JSON.stringify(tastings));
-}
-
-// --- DASHBOARD ---
-function calculateWinnerForDashboard(tasting) {
-    if (!tasting.whiskies || tasting.whiskies.length === 0 || !tasting.ratings) return null;
-    let bestWhisky = null; let highestAvg = -1;
-
-    tasting.whiskies.forEach((w, index) => {
-        let total = 0; let count = 0;
-        if(tasting.participants) {
-            tasting.participants.forEach(p => {
-                let r = tasting.ratings[p]?.[index];
-                if(r && r.overall && !isNaN(parseFloat(r.overall))) { total += parseFloat(r.overall); count++; }
-            });
-        }
-        let avg = count > 0 ? (total / count) : 0;
-        if (avg > highestAvg && avg > 0) { highestAvg = avg; bestWhisky = w; }
-    });
-    return { whisky: bestWhisky, score: highestAvg };
 }
 
 function loadDashboard() {
     const container = document.getElementById('tasting-list-container');
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    
-    if(tastings.length === 0) {
-        container.innerHTML = "<p style='text-align:center; color:#666;'>Noch keine Tastings gespeichert.</p>";
-        return;
-    }
-
+    if(tastings.length === 0) return container.innerHTML = "<p>Noch keine Tastings.</p>";
     tastings.sort((a, b) => new Date(b.date) - new Date(a.date));
-    let groupedByYear = {};
-    tastings.forEach(t => {
-        let year = t.date ? t.date.split('-')[0] : 'Unbekannt';
-        if(!groupedByYear[year]) groupedByYear[year] = [];
-        groupedByYear[year].push(t);
-    });
-
     let html = '';
-    let years = Object.keys(groupedByYear).sort((a, b) => b - a);
-    
-    years.forEach((year, index) => {
-        let openAttr = index === 0 ? "open" : "";
-        html += `<details class="year-details" ${openAttr}><summary class="year-summary">${year} (${groupedByYear[year].length})</summary>
-            <ul style="list-style: none; padding: 0; margin-top: 15px;">`;
-        
-        groupedByYear[year].forEach(t => {
-            let pCount = t.participants ? t.participants.length : (t.peopleCount || 0);
-            let wCount = t.whiskies ? t.whiskies.length : 0;
-            
-            let winnerHtml = "";
-            let winnerData = calculateWinnerForDashboard(t);
-            if (winnerData && winnerData.whisky) {
-                let w = winnerData.whisky;
-                let wString = w.name;
-                if(w.age) wString += ` (${w.age}J)`;
-                if(w.distillery) wString += ` - ${w.distillery}`;
-                winnerHtml = `<div style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${wString} <br><span style="color:#aaa; font-size:12px;">Ø ${winnerData.score.toFixed(2)} Punkte</span></div>`;
-            }
-
-            // NEU: Excel Export Button in der Button-Leiste hinzugefügt
-            html += `
-            <li class="tasting-item">
-                <strong>${t.name}</strong> <br>
-                <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${pCount} Personen | 🥃 ${wCount} Whiskys</span>
-                ${winnerHtml}
-                <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px;" onclick="resumeTasting('${t.id}')">✏️ Ansehen</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #27ae60; color: #27ae60;" onclick="exportTastingToCSV('${t.id}')">📊 Excel</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #e74c3c; color: #e74c3c;" onclick="deleteSingleTasting('${t.id}')">🗑️ Löschen</button>
-                </div>
-            </li>`;
+    let years = [...new Set(tastings.map(t => t.date.split('-')[0]))].sort((a, b) => b - a);
+    years.forEach(y => {
+        html += `<details open><summary class="year-summary">${y}</summary><ul style="list-style:none;padding:0;">`;
+        tastings.filter(t => t.date.startsWith(y)).forEach(t => {
+            html += `<li class="tasting-item"><strong>${t.name}</strong> (${t.date})<br>
+            <button class="btn-secondary" onclick="resumeTasting('${t.id}')">✏️</button>
+            <button class="btn-secondary" style="border-color:#e74c3c;color:#e74c3c" onclick="deleteSingleTasting('${t.id}')">🗑️</button></li>`;
         });
         html += `</ul></details>`;
     });
     container.innerHTML = html;
 }
 
-function resumeTasting(tastingId) {
-    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    let found = tastings.find(t => t.id === tastingId);
-    if(found) {
-        currentTasting = found; 
-        if(!currentTasting.participants) currentTasting.participants = [];
-        if(!currentTasting.whiskies) currentTasting.whiskies = [];
-        if(!currentTasting.ratings) currentTasting.ratings = {};
-        
-        document.getElementById('grid-title').innerText = currentTasting.name;
-        updateDatalists();
-        renderGrid();
-        navigateTo('view-grid');
+function resumeTasting(id) {
+    currentTasting = JSON.parse(localStorage.getItem('whiskyTastings')).find(t => t.id === id);
+    startTastingGrid();
+}
+
+function deleteSingleTasting(id) {
+    if(confirm("Löschen?")) {
+        let t = JSON.parse(localStorage.getItem('whiskyTastings')).filter(x => x.id !== id);
+        localStorage.setItem('whiskyTastings', JSON.stringify(t)); loadDashboard();
     }
 }
 
-function deleteSingleTasting(tastingId) {
-    if(confirm("Möchtest du dieses Tasting wirklich endgültig löschen?")) {
-        let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-        tastings = tastings.filter(t => t.id !== tastingId);
-        localStorage.setItem('whiskyTastings', JSON.stringify(tastings));
-        loadDashboard(); 
-    }
+// --- EXPORT/IMPORT ---
+function exportDatabase() {
+    let data = { tastings: JSON.parse(localStorage.getItem('whiskyTastings')), whiskies: JSON.parse(localStorage.getItem('whiskyDB')), participants: JSON.parse(localStorage.getItem('participantDB')) };
+    let blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    let a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "DramScore_Backup.json"; a.click();
 }
 
-// --- NEU: EXCEL/CSV EXPORT ---
-function exportTastingToCSV(tastingId) {
-    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    let t = tastings.find(x => x.id === tastingId);
-    if(!t) return;
-
-    // BOM für Excel (damit Umlaute richtig gelesen werden)
-    let csv = "\uFEFF"; 
-    csv += `Tasting:;${t.name}\nDatum:;${t.date}\nTeilnehmer:;${(t.participants || []).length}\n\n`;
-
-    // Tabellenkopf
-    let pNames = (t.participants || []).join(";");
-    csv += `Flight;Whisky;Destille;Art;Land;Alter;Alk. %;${pNames};Durchschnitt\n`;
-
-    // Zeilen (Whiskys)
-    (t.whiskies || []).forEach((w, index) => {
-        let total = 0, count = 0;
-        let pScores = (t.participants || []).map(p => {
-            let r = t.ratings[p]?.[index];
-            if(r && r.overall && !isNaN(parseFloat(r.overall))) {
-                total += parseFloat(r.overall);
-                count++;
-                // Komma statt Punkt für deutsches Excel
-                return parseFloat(r.overall).toFixed(1).replace('.', ','); 
-            }
-            return "-";
-        });
-        
-        let avg = count > 0 ? (total / count).toFixed(2).replace('.', ',') : "0,00";
-        let abv = (w.abv || '').toString().replace('.', ',');
-
-        csv += `${w.flight || 1};${w.name};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${pScores.join(";")};${avg}\n`;
-    });
-
-    // Download anstoßen
-    let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    let url = URL.createObjectURL(blob);
-    let link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `DramScore_${t.name.replace(/[^a-z0-9äöüß]/gi, '_')}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+function importDatabase(e) {
+    let reader = new FileReader();
+    reader.onload = (f) => {
+        let d = JSON.parse(f.target.result);
+        localStorage.setItem('whiskyTastings', JSON.stringify(d.tastings)); localStorage.setItem('whiskyDB', JSON.stringify(d.whiskies)); localStorage.setItem('participantDB', JSON.stringify(d.participants));
+        location.reload();
+    };
+    reader.readAsText(e.target.files[0]);
 }
 
-// --- AUSWERTUNG ---
 function finishAndShowResults() {
     saveTasting();
-    if(currentTasting.whiskies.length === 0) { alert("Keine Whiskys vorhanden!"); return exitToDashboard(); }
-
-    document.getElementById('results-title').innerText = currentTasting.name;
     const container = document.getElementById('podium-container');
     container.innerHTML = '';
-
-    let results = currentTasting.whiskies.map((w, index) => {
-        let total = 0; let count = 0;
-        currentTasting.participants.forEach(p => {
-            let r = currentTasting.ratings[p]?.[index];
-            if(r && r.overall && !isNaN(parseFloat(r.overall))) { total += parseFloat(r.overall); count++; }
-        });
-        let avg = count > 0 ? (total / count).toFixed(2) : 0;
-        return { whisky: w, avg: parseFloat(avg) };
-    });
-
-    results.sort((a, b) => b.avg - a.avg);
-
-    results.forEach((res, i) => {
-        let rankClass = ""; let medal = `${i+1}. Platz`;
-        if(i === 0 && res.avg > 0) { rankClass = "winner"; medal = "🏆 Platz 1 (Sieger)"; }
-        else if(i === results.length - 1 && res.avg > 0 && results.length > 1) { rankClass = "loser"; medal = "📉 Letzter Platz"; }
-
-        container.innerHTML += `
-            <div class="result-card ${rankClass}">
-                <div style="color: var(--secondary-text); font-size: 14px;">${medal}</div>
-                <h3>${res.whisky.name} ${res.whisky.age ? `(${res.whisky.age}J)` : ''}</h3>
-                <div style="font-size: 14px;">${res.whisky.distillery || ''} | ${res.whisky.country || ''}</div>
-                <div class="score-badge">Ø ${res.avg.toFixed(2)} Punkte</div>
-            </div>
-        `;
-    });
+    let res = currentTasting.whiskies.map((w, i) => {
+        let scores = currentTasting.participants.map(p => parseFloat(currentTasting.ratings[p]?.[i]?.overall || 0)).filter(s => s > 0);
+        return { name: w.name, avg: scores.length ? (scores.reduce((a,b)=>a+b)/scores.length).toFixed(2) : 0 };
+    }).sort((a,b)=>b.avg - a.avg);
+    res.forEach(r => container.innerHTML += `<div class="result-card"><h3>${r.name}</h3><div class="score-badge">${r.avg}</div></div>`);
     navigateTo('view-results');
 }
 
-function exitToDashboard() {
-    currentTasting = { id: null, name: '', date: '', participants: [], whiskies: [], ratings: {} };
-    loadDashboard();
-    navigateTo('view-dashboard');
-}
-
-// --- EINSTELLUNGEN & BACKUP ---
-function clearTastings() {
-    if(confirm("Bist du sicher? Alle Tastings werden gelöscht!")) {
-        localStorage.removeItem('whiskyTastings');
-        alert("Alle Tastings gelöscht.");
-        loadDashboard();
-    }
-}
-
-function clearMasterDB() {
-    if(confirm("Bist du sicher? Die Whisky- und Teilnehmer-Datenbank wird geleert!")) {
-        localStorage.removeItem('whiskyDB');
-        localStorage.removeItem('participantDB');
-        alert("Master-Datenbank geleert.");
-    }
-}
-
-function exportDatabase() {
-    let data = {
-        tastings: JSON.parse(localStorage.getItem('whiskyTastings')) || [],
-        whiskies: JSON.parse(localStorage.getItem('whiskyDB')) || [],
-        participants: JSON.parse(localStorage.getItem('participantDB')) || []
-    };
-    let json = JSON.stringify(data, null, 2);
-    let blob = new Blob([json], { type: "application/json" });
-    let url = URL.createObjectURL(blob);
-    let a = document.createElement('a');
-    a.href = url;
-    a.download = `DramScore_Backup_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-}
-
-function importDatabase(event) {
-    let file = event.target.files[0];
-    if (!file) return;
-    let reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            let data = JSON.parse(e.target.result);
-            if (data.tastings || data.whiskies) {
-                if(confirm("Backup laden? Deine aktuellen Daten auf DIESEM Gerät werden überschrieben!")) {
-                    if(data.tastings) localStorage.setItem('whiskyTastings', JSON.stringify(data.tastings));
-                    if(data.whiskies) localStorage.setItem('whiskyDB', JSON.stringify(data.whiskies));
-                    if(data.participants) localStorage.setItem('participantDB', JSON.stringify(data.participants));
-                    alert("Datenbank erfolgreich geladen!");
-                    loadDashboard();
-                }
-            } else { alert("Kein gültiges DramScore-Backup."); }
-        } catch(err) { alert("Fehler beim Lesen der Datei."); }
-    };
-    reader.readAsText(file);
-    event.target.value = ''; 
-}
+function exitToDashboard() { currentTasting = { id: null, name: '', date: '', participants: [], whiskies: [], ratings: {} }; loadDashboard(); navigateTo('view-dashboard'); }
