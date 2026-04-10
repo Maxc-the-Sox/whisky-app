@@ -5,7 +5,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCAn1PDTbgIhdGMnCCuP0DBqGQ1wAf1FQ0",
   authDomain: "dramscore-8328d.firebaseapp.com",
   // NEU: DIE GENAUE ADRESSE DEINER DATENBANK IN EUROPA
-  databaseURL: "https://dramscore-8328d-default-rtdb.europe-west1.firebasedatabase.app",
+  databaseURL: "https://dramscore-8328d-default-rtdb.europe-west1.firebasedatabase.app/",
   projectId: "dramscore-8328d",
   storageBucket: "dramscore-8328d.firebasestorage.app",
   messagingSenderId: "1093541141102",
