@@ -4,6 +4,8 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCAn1PDTbgIhdGMnCCuP0DBqGQ1wAf1FQ0",
   authDomain: "dramscore-8328d.firebaseapp.com",
+  // NEU: DIE GENAUE ADRESSE DEINER DATENBANK IN EUROPA
+  databaseURL: "https://dramscore-8328d-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "dramscore-8328d",
   storageBucket: "dramscore-8328d.firebasestorage.app",
   messagingSenderId: "1093541141102",
@@ -15,7 +17,7 @@ firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 window.onload = function() {
-    // 1. Wenn die Cloud leer ist, lade unsere iPhone-Daten hoch (nur beim allerersten Mal!)
+    // 1. Wenn die Cloud leer ist, lade unsere iPhone-Daten hoch
     database.ref('dramscore_db').once('value').then((snapshot) => {
         if (!snapshot.exists()) {
             syncToCloud();
@@ -26,12 +28,10 @@ window.onload = function() {
     database.ref('dramscore_db').on('value', (snapshot) => {
         if(snapshot.exists()) {
             const data = snapshot.val();
-            // Lade die Daten aus der Cloud in den lokalen Speicher
             if(data.tastings) localStorage.setItem('whiskyTastings', data.tastings);
             if(data.whiskies) localStorage.setItem('whiskyDB', data.whiskies);
             if(data.participants) localStorage.setItem('participantDB', data.participants);
             
-            // Aktualisiere das Dashboard (aber nur, wenn wir gerade dort sind, damit das Live-Tasting nicht gestört wird)
             if(document.getElementById('view-dashboard').style.display !== 'none') {
                 loadDashboard();
             }
@@ -42,7 +42,6 @@ window.onload = function() {
     document.getElementById('setup-date').valueAsDate = new Date();
 };
 
-// Die magische Funktion: Schiebt den aktuellen Stand in die Cloud
 function syncToCloud() {
     database.ref('dramscore_db').set({
         tastings: localStorage.getItem('whiskyTastings') || "[]",
@@ -75,7 +74,7 @@ function addParticipant() {
         if(!pDB.includes(name)) { 
             pDB.push(name); 
             localStorage.setItem('participantDB', JSON.stringify(pDB)); 
-            syncToCloud(); // <-- In die Cloud!
+            syncToCloud(); 
         }
         updateParticipantList(); updateParticipantDatalist(); input.value = '';
     }
@@ -90,7 +89,7 @@ function addLiveParticipant() {
         if(!pDB.includes(name)) { 
             pDB.push(name); 
             localStorage.setItem('participantDB', JSON.stringify(pDB)); 
-            syncToCloud(); // <-- In die Cloud!
+            syncToCloud(); 
         }
         updateParticipantDatalist();
         input.value = '';
@@ -262,7 +261,7 @@ function saveTasting() {
     let idx = tastings.findIndex(t => t.id === currentTasting.id);
     if(idx >= 0) tastings[idx] = currentTasting; else tastings.push(currentTasting);
     localStorage.setItem('whiskyTastings', JSON.stringify(tastings));
-    syncToCloud(); // <-- In die Cloud!
+    syncToCloud(); 
 }
 
 function calculateWinnerForDashboard(t) {
@@ -352,7 +351,7 @@ function saveToMasterDB(w) {
     if(!db.find(x => x.name === w.name)) { 
         db.push(w); 
         localStorage.setItem('whiskyDB', JSON.stringify(db)); 
-        syncToCloud(); // <-- In die Cloud!
+        syncToCloud(); 
     }
 }
 
@@ -386,7 +385,7 @@ function deleteSingleTasting(id) {
     if(confirm("Tasting wirklich löschen?")) {
         let t = JSON.parse(localStorage.getItem('whiskyTastings')).filter(x => x.id !== id);
         localStorage.setItem('whiskyTastings', JSON.stringify(t)); 
-        syncToCloud(); // <-- In die Cloud!
+        syncToCloud(); 
         loadDashboard();
     }
 }
@@ -404,7 +403,7 @@ function importDatabase(event) {
         localStorage.setItem('whiskyTastings', JSON.stringify(d.tastings || []));
         localStorage.setItem('whiskyDB', JSON.stringify(d.whiskies || []));
         localStorage.setItem('participantDB', JSON.stringify(d.participants || []));
-        syncToCloud(); // <-- In die Cloud!
+        syncToCloud(); 
         location.reload();
     };
     reader.readAsText(event.target.files[0]);
@@ -413,7 +412,7 @@ function importDatabase(event) {
 function clearTastings() { 
     if(confirm("Alle Tastings löschen?")) { 
         localStorage.removeItem('whiskyTastings'); 
-        syncToCloud(); // <-- In die Cloud!
+        syncToCloud(); 
         loadDashboard(); 
     } 
 }
@@ -421,6 +420,6 @@ function clearMasterDB() {
     if(confirm("Master-Datenbank leeren?")) { 
         localStorage.removeItem('whiskyDB'); 
         localStorage.removeItem('participantDB'); 
-        syncToCloud(); // <-- In die Cloud!
+        syncToCloud(); 
     } 
 }
