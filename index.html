@@ -12,6 +12,7 @@
 
     <section id="view-dashboard" class="view">
         <header>
+            <img src="https://maxc-the-sox.github.io/whisky-app/logo.png?v=1" alt="App Logo" class="app-logo">
             <h1>🥃 DramScore</h1>
             <p>Deine Tasting-Zentrale</p>
         </header>
@@ -98,8 +99,36 @@
             <h2 id="modal-whisky-title">Whisky eintragen</h2>
             <datalist id="known-whiskies"></datalist>
             <datalist id="known-distilleries"></datalist>
-            <datalist id="whisky-types"><option value="Single Malt Scotch"></option><option value="Bourbon"></option></datalist>
-            <datalist id="countries"><option value="Schottland"></option><option value="Irland"></option><option value="USA"></option></datalist>
+            
+            <datalist id="whisky-types">
+                <option value="Single Malt Scotch"></option>
+                <option value="Blended Malt Scotch"></option>
+                <option value="Blended Scotch"></option>
+                <option value="Single Pot Still (Irish)"></option>
+                <option value="Bourbon"></option>
+                <option value="Rye Whiskey"></option>
+                <option value="Tennessee Whiskey"></option>
+                <option value="Single Grain"></option>
+                <option value="Corn Whiskey"></option>
+                <option value="Single Malt (Japan)"></option>
+                <option value="Single Malt (Deutschland)"></option>
+            </datalist>
+
+            <datalist id="countries">
+                <option value="Schottland"></option>
+                <option value="Irland"></option>
+                <option value="USA"></option>
+                <option value="Japan"></option>
+                <option value="Deutschland"></option>
+                <option value="Kanada"></option>
+                <option value="Indien"></option>
+                <option value="Taiwan"></option>
+                <option value="Frankreich"></option>
+                <option value="Australien"></option>
+                <option value="Schweden"></option>
+                <option value="Schweiz"></option>
+                <option value="Österreich"></option>
+            </datalist>
 
             <label>Name</label><input type="text" id="w-name" list="known-whiskies" onchange="autoFillWhisky(this)">
             <label>Destille</label><input type="text" id="w-distillery" list="known-distilleries">
