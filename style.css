@@ -9,10 +9,8 @@
 
 body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
-/* FIX: padding-top von 40px auf 70px erhöht, damit die Überschrift tiefer rutscht */
 header { padding: 70px 20px 20px; background: linear-gradient(to bottom, #000, var(--bg-color)); text-align: center; position: relative; }
 
-/* Bild Styling für das Logo */
 .app-logo {
     max-width: 120px;
     height: auto;
@@ -34,7 +32,6 @@ input { width: 100%; padding: 12px; margin-top: 5px; background: var(--card-bg);
 .btn-main { background-color: var(--accent-color); color: white; border: none; margin-top: 25px; }
 .btn-secondary { background-color: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); margin-top: 15px; }
 
-/* FIX: top von 35px auf 15px verringert, damit der Button weiter oben klebt */
 .btn-back { background: none; border: none; color: var(--secondary-text); font-size: 16px; position: absolute; left: 10px; top: 15px; padding: 10px; cursor: pointer; z-index: 10; }
 
 .tag-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -48,7 +45,10 @@ input { width: 100%; padding: 12px; margin-top: 5px; background: var(--card-bg);
 table { width: 100%; border-collapse: collapse; text-align: center; }
 th, td { padding: 8px; border: 1px solid var(--table-border); white-space: nowrap; }
 th { background-color: #222; color: var(--accent-color); font-weight: bold; cursor: pointer; }
-td:first-child { font-weight: bold; text-align: left; background-color: #222; position: sticky; left: 0; z-index: 2; }
+/* Teilnehmer Spalte (Klickbar zum Löschen) */
+td:first-child { font-weight: bold; text-align: left; background-color: #222; position: sticky; left: 0; z-index: 2; cursor: pointer; }
+td:first-child:active { background-color: #333; }
+
 .add-whisky-btn { font-size: 24px; color: #2ecc71; cursor: pointer; background: none; border: none; }
 
 .flight-header { background-color: #111 !important; color: #3498db !important; border-bottom: 2px solid #3498db !important; font-size: 18px;}
