@@ -4,7 +4,6 @@
 const firebaseConfig = {
   apiKey: "AIzaSyCAn1PDTbgIhdGMnCCuP0DBqGQ1wAf1FQ0",
   authDomain: "dramscore-8328d.firebaseapp.com",
-  // NEU: DIE GENAUE ADRESSE DEINER DATENBANK IN EUROPA
   databaseURL: "https://dramscore-8328d-default-rtdb.europe-west1.firebasedatabase.app/",
   projectId: "dramscore-8328d",
   storageBucket: "dramscore-8328d.firebasestorage.app",
@@ -149,10 +148,20 @@ function startTastingGrid() {
     currentTasting.date = document.getElementById('setup-date').value;
     if(!currentTasting.id) currentTasting.id = 't_' + Date.now();
     if(currentTasting.participants.length === 0) return alert("Bitte füge mindestens einen Teilnehmer hinzu!");
-    document.getElementById('grid-title').innerText = currentTasting.name;
+    
+    // NEU: Fülle die bearbeitbaren Felder im Header
+    document.getElementById('grid-edit-name').value = currentTasting.name;
+    document.getElementById('grid-edit-date').value = currentTasting.date;
+    
     updateDatalists();
     renderGrid();
     navigateTo('view-grid');
+}
+
+// NEU: Funktion um Änderungen an Name/Datum direkt in das Tasting-Objekt zu übernehmen
+function updateTastingHeader() {
+    currentTasting.name = document.getElementById('grid-edit-name').value;
+    currentTasting.date = document.getElementById('grid-edit-date').value;
 }
 
 function renderGrid() {
@@ -312,7 +321,11 @@ function loadDashboard() {
 function resumeTasting(id) {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     currentTasting = JSON.parse(JSON.stringify(tastings.find(t => t.id === id))); 
-    document.getElementById('grid-title').innerText = currentTasting.name;
+    
+    // NEU: Fülle die bearbeitbaren Felder beim Resume
+    document.getElementById('grid-edit-name').value = currentTasting.name;
+    document.getElementById('grid-edit-date').value = currentTasting.date;
+    
     renderGrid(); navigateTo('view-grid');
 }
 
@@ -409,17 +422,31 @@ function importDatabase(event) {
     reader.readAsText(event.target.files[0]);
 }
 
-function clearTastings() { 
-    if(confirm("Alle Tastings löschen?")) { 
-        localStorage.removeItem('whiskyTastings'); 
-        syncToCloud(); 
-        loadDashboard(); 
-    } 
-}
-function clearMasterDB() { 
-    if(confirm("Master-Datenbank leeren?")) { 
-        localStorage.removeItem('whiskyDB'); 
-        localStorage.removeItem('participantDB'); 
-        syncToCloud(); 
-    } 
+function exportAllTastingsToCSV() {
+    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
+    if(tastings.length === 0) return alert("Keine Tastings vorhanden!");
+    
+    let csv = "\uFEFFTasting;Datum;Flight;Whisky;Destille;Art;Land;Alter;Alk. %;Durchschnitt\n";
+    
+    tastings.forEach(t => {
+        if(!t.whiskies) return;
+        t.whiskies.forEach((w, i) => {
+            let tot = 0, c = 0;
+            if(t.participants) {
+                t.participants.forEach(p => { 
+                    let r = t.ratings[p]?.[i]; 
+                    if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); c++; }
+                });
+            }
+            let avg = c > 0 ? (tot/c).toFixed(2) : "0,00";
+            let abv = (w.abv || '').toString().replace('.', ',');
+            
+            csv += `${t.name};${t.date};${w.flight || 1};${w.name};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${avg.replace('.', ',')}\n`;
+        });
+    });
+    
+    let a = document.createElement("a"); 
+    a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
+    a.download = `DramScore_Alle_Tastings.csv`; 
+    a.click();
 }

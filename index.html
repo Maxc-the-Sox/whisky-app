@@ -51,7 +51,13 @@
     <section id="view-grid" class="view" style="display: none;">
         <header style="padding-top: 80px;">
             <button class="btn-back" style="top: 15px; background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 8px; white-space: nowrap;" onclick="exitToDashboard()">← Zurück</button>
-            <h1 id="grid-title">Live Tasting</h1>
+            
+            <div style="padding: 0 20px;">
+                <input type="text" id="grid-edit-name" onchange="updateTastingHeader()" 
+                       style="background: transparent; border: none; border-bottom: 1px solid var(--accent-color); color: var(--accent-color); font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 5px; border-radius: 0;">
+                <input type="date" id="grid-edit-date" onchange="updateTastingHeader()" 
+                       style="background: transparent; border: none; color: var(--secondary-text); font-size: 14px; text-align: center; width: auto; margin: 0 auto; display: block;">
+            </div>
         </header>
         <div class="content">
             <div class="table-container">
@@ -87,8 +93,10 @@
 
             <hr style="border: 1px solid #444; margin: 30px 0;">
 
-            <button class="btn-secondary" style="color: #e74c3c; border-color: #e74c3c;" onclick="clearTastings()">🗑️ Alle Tastings löschen</button>
-            <button class="btn-secondary" style="color: #e74c3c; border-color: #e74c3c;" onclick="clearMasterDB()">🗑️ Whisky Master-Datenbank leeren</button>
+            <h3>📊 Master-Export</h3>
+            <p style="color: var(--secondary-text); font-size: 14px;">Lade eine Excel-Tabelle (CSV) herunter, die alle jemals durchgeführten Tastings und Whiskys enthält.</p>
+            <button class="btn-main" style="background-color: #2980b9;" onclick="exportAllTastingsToCSV()">📊 Alle Tastings in Excel</button>
+            
         </div>
     </section>
 
@@ -178,6 +186,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase1"></script>
+    <script src="app.js?v=firebase4"></script>
 </body>
 </html>
