@@ -1,0 +1,64 @@
+:root {
+    --bg-color: #1a1a1a;
+    --card-bg: #2d2d2d;
+    --accent-color: #d35400; 
+    --text-color: #f5f5f5;
+    --secondary-text: #bdc3c7;
+    --table-border: #444;
+}
+
+body { font-family: -apple-system, system-ui, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+header { padding: 40px 20px 20px; background: linear-gradient(to bottom, #000, var(--bg-color)); text-align: center; position: relative; }
+
+/* NEU: Bild Styling */
+.app-logo {
+    max-width: 120px;
+    height: auto;
+    border-radius: 15px; /* Macht die Ecken leicht rund */
+    margin-bottom: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4); /* Leichter 3D Effekt */
+}
+
+h1 { margin: 0; font-size: 24px; color: var(--accent-color); }
+h2 { color: var(--accent-color); font-size: 20px;}
+h3 { color: var(--accent-color); }
+.content { padding: 20px; }
+.view { min-height: 100vh; }
+label { display: block; margin-top: 15px; color: var(--secondary-text); font-size: 14px; }
+
+input { width: 100%; padding: 12px; margin-top: 5px; background: var(--card-bg); border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; }
+
+.btn-main, .btn-secondary { border-radius: 10px; width: 100%; font-size: 16px; cursor: pointer; font-weight: bold; padding: 15px; box-sizing: border-box; }
+.btn-main { background-color: var(--accent-color); color: white; border: none; margin-top: 25px; }
+.btn-secondary { background-color: transparent; color: var(--accent-color); border: 2px solid var(--accent-color); margin-top: 15px; }
+.btn-back { background: none; border: none; color: var(--secondary-text); font-size: 16px; position: absolute; left: 10px; top: 35px; padding: 10px; cursor: pointer; z-index: 10; }
+
+.tag-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.tag-list li { background: var(--card-bg); padding: 8px 12px; border-radius: 20px; font-size: 14px; border: 1px solid #444; }
+
+.year-details { margin-bottom: 20px; }
+.year-summary { font-size: 20px; font-weight: bold; color: var(--accent-color); padding: 10px 0; border-bottom: 1px solid #444; cursor: pointer; outline: none; }
+.year-summary::marker { color: var(--secondary-text); }
+
+.table-container { overflow-x: auto; margin-top: 20px; border-radius: 8px; border: 1px solid var(--table-border); background: var(--card-bg); }
+table { width: 100%; border-collapse: collapse; text-align: center; }
+th, td { padding: 8px; border: 1px solid var(--table-border); white-space: nowrap; }
+th { background-color: #222; color: var(--accent-color); font-weight: bold; cursor: pointer; }
+td:first-child { font-weight: bold; text-align: left; background-color: #222; position: sticky; left: 0; z-index: 2; }
+.add-whisky-btn { font-size: 24px; color: #2ecc71; cursor: pointer; background: none; border: none; }
+
+.flight-header { background-color: #111 !important; color: #3498db !important; border-bottom: 2px solid #3498db !important; font-size: 18px;}
+.whisky-header { background-color: #2d2d2d !important; font-size: 14px; font-weight: normal !important; }
+
+.inline-input { width: 60px; padding: 8px; margin: 0; text-align: center; font-weight: bold; font-size: 16px; background: #111; border: 1px solid #555; color: white;}
+.edit-icon { cursor: pointer; font-size: 18px; margin-left: 5px; }
+
+.modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
+.modal-content { background-color: var(--bg-color); margin: 10% auto; padding: 20px; border: 1px solid var(--accent-color); border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+
+.result-card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #444; text-align: center;}
+.result-card h3 { margin: 5px 0; color: white;}
+.result-card.winner { border-color: #f1c40f; box-shadow: 0 0 10px rgba(241, 196, 15, 0.3); }
+.result-card.loser { border-color: #e74c3c; opacity: 0.8; }
+.score-badge { display: inline-block; background: var(--accent-color); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 20px; margin-top: 10px;}
+.tasting-item { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #444; }
