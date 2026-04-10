@@ -16,14 +16,12 @@ firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
 window.onload = function() {
-    // 1. Wenn die Cloud leer ist, lade unsere iPhone-Daten hoch
     database.ref('dramscore_db').once('value').then((snapshot) => {
         if (!snapshot.exists()) {
             syncToCloud();
         }
     });
 
-    // 2. Hör zu, ob sich in der Cloud was ändert
     database.ref('dramscore_db').on('value', (snapshot) => {
         if(snapshot.exists()) {
             const data = snapshot.val();
@@ -50,10 +48,9 @@ function syncToCloud() {
 }
 
 // ==========================================
-// APP LOGIK (Dein Gold-Standard)
+// APP LOGIK
 // ==========================================
 
-// NEU: number Attribut zum Tasting hinzugefügt
 let currentTasting = { id: null, number: '', name: '', date: '', participants: [], whiskies: [], ratings: {} };
 let editingWhiskyIndex = null;
 let currentRatingContext = { participant: null, whiskyIndex: null };
@@ -152,7 +149,6 @@ function startTastingGrid() {
     if(!currentTasting.id) currentTasting.id = 't_' + Date.now();
     if(currentTasting.participants.length === 0) return alert("Bitte füge mindestens einen Teilnehmer hinzu!");
     
-    // Felder im Header füllen
     document.getElementById('grid-edit-number').value = currentTasting.number;
     document.getElementById('grid-edit-name').value = currentTasting.name;
     document.getElementById('grid-edit-date').value = currentTasting.date;
@@ -162,7 +158,6 @@ function startTastingGrid() {
     navigateTo('view-grid');
 }
 
-// Speichert Änderungen an Nummer/Name/Datum direkt in das Tasting-Objekt
 function updateTastingHeader() {
     currentTasting.number = document.getElementById('grid-edit-number').value;
     currentTasting.name = document.getElementById('grid-edit-name').value;
@@ -309,7 +304,6 @@ function loadDashboard() {
             let winData = calculateWinnerForDashboard(t);
             let winH = (winData && winData.whisky) ? `<div style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name} <br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
             
-            // NEU: Anzeige der Tasting Nummer im Dashboard
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
             
             html += `<li class="tasting-item">
@@ -331,7 +325,6 @@ function resumeTasting(id) {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     currentTasting = JSON.parse(JSON.stringify(tastings.find(t => t.id === id))); 
     
-    // Felder füllen beim Fortsetzen
     document.getElementById('grid-edit-number').value = currentTasting.number || '';
     document.getElementById('grid-edit-name').value = currentTasting.name || '';
     document.getElementById('grid-edit-date').value = currentTasting.date || '';
@@ -436,7 +429,6 @@ function exportAllTastingsToCSV() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     if(tastings.length === 0) return alert("Keine Tastings vorhanden!");
     
-    // NEU: Spalte für Tasting Nummer ("Nr.") hinzugefügt
     let csv = "\uFEFFNr.;Tasting;Datum;Flight;Whisky;Destille;Art;Land;Alter;Alk. %;Durchschnitt\n";
     
     tastings.forEach(t => {
@@ -451,8 +443,6 @@ function exportAllTastingsToCSV() {
             }
             let avg = c > 0 ? (tot/c).toFixed(2) : "0,00";
             let abv = (w.abv || '').toString().replace('.', ',');
-            
-            // NEU: t.number wird ganz vorne in die Zeile eingefügt
             csv += `${t.number || ''};${t.name};${t.date};${w.flight || 1};${w.name};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${avg.replace('.', ',')}\n`;
         });
     });
@@ -461,4 +451,172 @@ function exportAllTastingsToCSV() {
     a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv;charset=utf-8;'}));
     a.download = `DramScore_Alle_Tastings.csv`; 
     a.click();
+}
+
+// ==========================================
+// HALL OF FAME / STATISTIKEN
+// ==========================================
+
+function loadStats() {
+    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
+    let globalWhiskys = {};
+    let allParticipants = new Set();
+    
+    // 1. Daten sammeln für Globale Top & Flop und Teilnehmerliste
+    tastings.forEach(t => {
+        if(t.participants) t.participants.forEach(p => allParticipants.add(p));
+        
+        if(t.whiskies) {
+            t.whiskies.forEach((w, i) => {
+                let key = w.name + (w.distillery ? `_${w.distillery}` : '');
+                if(!globalWhiskys[key]) globalWhiskys[key] = { name: w.name, dist: w.distillery, age: w.age, tot: 0, count: 0 };
+                
+                if(t.participants) {
+                    t.participants.forEach(p => {
+                        let r = t.ratings && t.ratings[p] ? t.ratings[p][i] : null;
+                        if(r && r.overall && !isNaN(parseFloat(r.overall))) {
+                            globalWhiskys[key].tot += parseFloat(r.overall);
+                            globalWhiskys[key].count++;
+                        }
+                    });
+                }
+            });
+        }
+    });
+    
+    // 2. Arrays berechnen (nur Whiskys mit echten Punkten)
+    let globalArr = Object.values(globalWhiskys).filter(w => w.count > 0).map(w => {
+        w.avg = w.tot / w.count;
+        return w;
+    });
+    
+    let globalTop10 = [...globalArr].sort((a,b) => b.avg - a.avg).slice(0, 10);
+    let globalFlop10 = [...globalArr].sort((a,b) => a.avg - b.avg).slice(0, 10);
+    
+    // Top 10 Rendern
+    let gHtml = '';
+    if(globalTop10.length === 0) gHtml = "<p style='text-align:center; color:#aaa;'>Noch keine Bewertungen vorhanden.</p>";
+    globalTop10.forEach((w, idx) => {
+        let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
+        gHtml += `<div class="result-card" style="border-color: ${borderCol};">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="text-align:left;">
+                    <div style="color:#aaa; font-size:12px;">Platz ${idx+1} (${w.count} Bewertungen)</div>
+                    <strong style="font-size:16px;">${w.name} ${w.age ? `(${w.age}J)` : ''}</strong><br>
+                    <span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span>
+                </div>
+                <div class="score-badge" style="margin:0;">Ø ${w.avg.toFixed(2)}</div>
+            </div>
+        </div>`;
+    });
+    document.getElementById('global-top-container').innerHTML = gHtml;
+    
+    // Flop 10 Rendern
+    let fHtml = '';
+    if(globalFlop10.length === 0) fHtml = "<p style='text-align:center; color:#aaa;'>Noch keine Bewertungen vorhanden.</p>";
+    globalFlop10.forEach((w, idx) => {
+        fHtml += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="text-align:left;">
+                    <div style="color:#e74c3c; font-size:12px;">Flop ${idx+1} (${w.count} Bewertungen)</div>
+                    <strong style="font-size:16px;">${w.name} ${w.age ? `(${w.age}J)` : ''}</strong><br>
+                    <span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span>
+                </div>
+                <div class="score-badge" style="background:#e74c3c; margin:0;">Ø ${w.avg.toFixed(2)}</div>
+            </div>
+        </div>`;
+    });
+    document.getElementById('global-flop-container').innerHTML = fHtml;
+    
+    // 3. Dropdown für Trinker füllen
+    let pSelect = document.getElementById('stat-participant-select');
+    pSelect.innerHTML = '<option value="">-- Teilnehmer auswählen --</option>';
+    Array.from(allParticipants).sort().forEach(p => {
+        pSelect.innerHTML += `<option value="${p}">${p}</option>`;
+    });
+    
+    document.getElementById('participant-stat-container').innerHTML = '';
+}
+
+function showParticipantStats() {
+    let pName = document.getElementById('stat-participant-select').value;
+    let container = document.getElementById('participant-stat-container');
+    if(!pName) { container.innerHTML = ''; return; }
+    
+    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
+    let myWhiskys = [];
+    let distStats = {};
+    
+    tastings.forEach(t => {
+        if(!t.participants || !t.participants.includes(pName) || !t.whiskies) return;
+        
+        t.whiskies.forEach((w, i) => {
+            let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null;
+            if(r && r.overall && !isNaN(parseFloat(r.overall))) {
+                let score = parseFloat(r.overall);
+                myWhiskys.push({ name: w.name, dist: w.distillery, age: w.age, score: score, tasting: t.name });
+                
+                if(w.distillery) {
+                    if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 };
+                    distStats[w.distillery].tot += score;
+                    distStats[w.distillery].count++;
+                }
+            }
+        });
+    });
+    
+    if(myWhiskys.length === 0) { container.innerHTML = "<p style='text-align:center;'>Keine Daten für diesen Teilnehmer.</p>"; return; }
+    
+    // Top 10 berechnen
+    let top10 = [...myWhiskys].sort((a,b) => b.score - a.score).slice(0, 10);
+    
+    // Flop 10 berechnen
+    let bottom10 = [...myWhiskys].sort((a,b) => a.score - b.score).slice(0, 10);
+    
+    let bestDist = { name: '-', avg: 0 };
+    Object.keys(distStats).forEach(d => {
+        let avg = distStats[d].tot / distStats[d].count;
+        if(avg > bestDist.avg) { bestDist = { name: d, avg: avg, count: distStats[d].count }; }
+    });
+    
+    let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;">
+        <div style="font-size:24px; color:white;">🥃 ${myWhiskys.length}</div>
+        <div style="color:#aaa; font-size:12px;">Bewertete Whiskys insgesamt</div>
+        <hr style="border: 0; border-top: 1px solid #444; margin:10px 0;">
+        <div style="color:#3498db; font-size:18px; font-weight:bold;">${bestDist.name}</div>
+        <div style="color:#aaa; font-size:12px;">Lieblings-Destille (Ø ${bestDist.avg.toFixed(2)} aus ${bestDist.count} Whiskys)</div>
+    </div>`;
+    
+    // Top 10 HTML
+    html += `<h3 style="color:#2ecc71; text-align: center;">🏆 Seine/Ihre Top 10</h3>`;
+    top10.forEach((w, idx) => {
+        let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
+        html += `<div class="result-card" style="border-color: ${borderCol};">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="text-align:left;">
+                    <div style="color:#aaa; font-size:12px;">Platz ${idx+1}</div>
+                    <strong style="font-size:16px;">${w.name} ${w.age ? `(${w.age}J)` : ''}</strong><br>
+                    <span style="font-size:11px; color:#999;">in: ${w.tasting}</span>
+                </div>
+                <div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div>
+            </div>
+        </div>`;
+    });
+    
+    // Flop 10 HTML
+    html += `<h3 style="color:#e74c3c; text-align: center; margin-top: 40px;">☠️ Seine/Ihre Flop 10</h3>`;
+    bottom10.forEach((w, idx) => {
+        html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="text-align:left;">
+                    <div style="color:#e74c3c; font-size:12px;">Flop ${idx+1}</div>
+                    <strong style="font-size:16px;">${w.name} ${w.age ? `(${w.age}J)` : ''}</strong><br>
+                    <span style="font-size:11px; color:#999;">in: ${w.tasting}</span>
+                </div>
+                <div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div>
+            </div>
+        </div>`;
+    });
+    
+    container.innerHTML = html;
 }

@@ -18,6 +18,7 @@
         </header>
         <div class="content">
             <button class="btn-main" onclick="navigateTo('view-setup')">Neues Tasting starten</button>
+            <button class="btn-secondary" style="border-color: #9b59b6; color: #9b59b6;" onclick="loadStats(); navigateTo('view-stats')">📊 Hall of Fame & Statistiken</button>
             <button class="btn-secondary" style="border-color: #666; color: #ccc;" onclick="navigateTo('view-settings')">⚙️ Einstellungen & Backup</button>
             
             <h2 style="margin-top: 30px;">Deine Tastings</h2>
@@ -91,6 +92,31 @@
         <div class="content">
             <div id="podium-container"></div>
             <button class="btn-main" onclick="exitToDashboard()">Tasting abschließen</button>
+        </div>
+    </section>
+
+    <section id="view-stats" class="view" style="display: none;">
+        <header>
+            <button class="btn-back" onclick="navigateTo('view-dashboard')">← Zurück</button>
+            <h1 style="color: #9b59b6;">📊 Hall of Fame</h1>
+            <p>Eure Whisky-Historie</p>
+        </header>
+        <div class="content">
+            <h2 style="color: #f1c40f; text-align: center;">🌍 Globale Top 10</h2>
+            <p style="text-align: center; color: #aaa; font-size: 14px;">Der beste Durchschnitt aller Tastings</p>
+            <div id="global-top-container"></div>
+            
+            <h2 style="color: #e74c3c; text-align: center; margin-top: 40px;">☠️ Globale Flop 10</h2>
+            <p style="text-align: center; color: #aaa; font-size: 14px;">Die harten Fälle...</p>
+            <div id="global-flop-container"></div>
+            
+            <hr style="border: 1px solid #444; margin: 40px 0 30px;">
+            
+            <h2 style="color: #3498db; text-align: center;">👤 Trinker-Profile</h2>
+            <select id="stat-participant-select" onchange="showParticipantStats()" style="width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #555; border-radius: 8px; font-size: 16px; margin-bottom: 20px;">
+                <option value="">-- Teilnehmer auswählen --</option>
+            </select>
+            <div id="participant-stat-container"></div>
         </div>
     </section>
 
@@ -202,6 +228,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase5"></script>
+    <script src="app.js?v=firebase7"></script>
 </body>
 </html>
