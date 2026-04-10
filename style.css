@@ -12,8 +12,8 @@ body { font-family: -apple-system, system-ui, sans-serif; background-color: var(
 header { padding: 70px 20px 20px; background: linear-gradient(to bottom, #000, var(--bg-color)); text-align: center; position: relative; }
 
 .app-logo {
-    /* NEU: max-width auf 200px erhöht für ein deutlich größeres Logo */
-    max-width: 200px;
+    /* NEU: max-width auf 250px erhöht! */
+    max-width: 250px;
     height: auto;
     border-radius: 15px; 
     margin-bottom: 15px;
