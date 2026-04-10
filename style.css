@@ -12,7 +12,8 @@ body { font-family: -apple-system, system-ui, sans-serif; background-color: var(
 header { padding: 70px 20px 20px; background: linear-gradient(to bottom, #000, var(--bg-color)); text-align: center; position: relative; }
 
 .app-logo {
-    max-width: 120px;
+    /* NEU: max-width erhöht von 120px auf 150px */
+    max-width: 150px;
     height: auto;
     border-radius: 15px; 
     margin-bottom: 15px;
@@ -45,7 +46,6 @@ input { width: 100%; padding: 12px; margin-top: 5px; background: var(--card-bg);
 table { width: 100%; border-collapse: collapse; text-align: center; }
 th, td { padding: 8px; border: 1px solid var(--table-border); white-space: nowrap; }
 th { background-color: #222; color: var(--accent-color); font-weight: bold; cursor: pointer; }
-/* Teilnehmer Spalte (Klickbar zum Löschen) */
 td:first-child { font-weight: bold; text-align: left; background-color: #222; position: sticky; left: 0; z-index: 2; cursor: pointer; }
 td:first-child:active { background-color: #333; }
 
