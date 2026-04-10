@@ -48,6 +48,25 @@ function removeLiveParticipant(name) {
     }
 }
 
+// NEU: Whisky aus dem laufenden Tasting entfernen
+function removeWhisky(idx) {
+    let wName = currentTasting.whiskies[idx].name;
+    if(confirm(`${wName} wirklich löschen? Alle Wertungen dafür gehen verloren.`)) {
+        currentTasting.whiskies.splice(idx, 1);
+        // Wertungen der anderen Whiskys müssen neu indiziert werden
+        for(let p in currentTasting.ratings) {
+            let newRatings = {};
+            for(let rIdx in currentTasting.ratings[p]) {
+                let ri = parseInt(rIdx);
+                if(ri < idx) newRatings[ri] = currentTasting.ratings[p][ri];
+                if(ri > idx) newRatings[ri-1] = currentTasting.ratings[p][ri];
+            }
+            currentTasting.ratings[p] = newRatings;
+        }
+        renderGrid();
+    }
+}
+
 function updateParticipantList() {
     const ul = document.getElementById('participant-list');
     ul.innerHTML = '';
@@ -73,7 +92,7 @@ function startTastingGrid() {
     currentTasting.name = document.getElementById('setup-name').value || 'Unbenanntes Tasting';
     currentTasting.date = document.getElementById('setup-date').value;
     if(!currentTasting.id) currentTasting.id = 't_' + Date.now();
-    if(currentTasting.participants.length === 0) return alert("Bitte Teilnehmer hinzufügen!");
+    if(currentTasting.participants.length === 0) return alert("Bitte füge mindestens einen Teilnehmer hinzu!");
     document.getElementById('grid-title').innerText = currentTasting.name;
     updateDatalists();
     renderGrid();
@@ -97,7 +116,11 @@ function renderGrid() {
                 currentFlight = c.f; span = 1;
             } else { span++; }
             let title = c.w.name + (c.w.age ? ` (${c.w.age}J)` : '');
-            whiskyRow += `<th onclick="openWhiskyModal(${c.idx})" class="whisky-header"><strong>${title}</strong><br><span style="font-size:11px; color:#aaa;">✏️</span></th>`;
+            // Kopfzeile mit Bearbeiten UND Papierkorb
+            whiskyRow += `<th class="whisky-header">
+                <div onclick="openWhiskyModal(${c.idx})"><strong>${title}</strong><br><span style="font-size:11px; color:#aaa;">✏️</span></div>
+                <div onclick="removeWhisky(${c.idx})" style="margin-top:8px; color:#e74c3c; font-size:14px;">🗑️</div>
+            </th>`;
         });
         flightRow += `<th colspan="${span}" class="flight-header">Flight ${currentFlight}</th>`;
     }
@@ -187,10 +210,12 @@ function calculateWinnerForDashboard(t) {
     let best = null; let highAvg = -1;
     t.whiskies.forEach((w, i) => {
         let tot = 0, count = 0;
-        t.participants.forEach(p => {
-            let r = t.ratings[p]?.[i];
-            if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; }
-        });
+        if(t.participants) {
+            t.participants.forEach(p => {
+                let r = t.ratings[p]?.[i];
+                if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; }
+            });
+        }
         let avg = count > 0 ? (tot / count) : 0;
         if (avg > highAvg && avg > 0) { highAvg = avg; best = w; }
     });

@@ -79,12 +79,16 @@
         </header>
         <div class="content">
             <h3>💾 Backup & Sync</h3>
+            <p style="color: var(--secondary-text); font-size: 14px;">Speichere deine komplette Datenbank als Datei ab.</p>
             <button class="btn-main" style="background-color: #27ae60;" onclick="exportDatabase()">Datenbank exportieren</button>
+            
             <input type="file" id="import-file" style="display: none;" accept=".json" onchange="importDatabase(event)">
             <button class="btn-secondary" style="border-color: #2980b9; color: #3498db;" onclick="document.getElementById('import-file').click()">📂 Datenbank laden (Import)</button>
+
             <hr style="border: 1px solid #444; margin: 30px 0;">
+
             <button class="btn-secondary" style="color: #e74c3c; border-color: #e74c3c;" onclick="clearTastings()">🗑️ Alle Tastings löschen</button>
-            <button class="btn-secondary" style="color: #e74c3c; border-color: #e74c3c;" onclick="clearMasterDB()">🗑️ Master-Datenbank leeren</button>
+            <button class="btn-secondary" style="color: #e74c3c; border-color: #e74c3c;" onclick="clearMasterDB()">🗑️ Whisky Master-Datenbank leeren</button>
         </div>
     </section>
 
@@ -139,7 +143,7 @@
             
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-secondary" onclick="closeModal('modal-whisky')">Abbrechen</button>
-                <button class="btn-main" onclick="saveWhiskyFromModal()">Speichern</button>
+                <button class="btn-main" style="margin-top: 15px;" onclick="saveWhiskyFromModal()">Speichern</button>
             </div>
         </div>
     </div>
@@ -151,7 +155,7 @@
             <input type="text" id="live-participant-name" list="known-participants" placeholder="Name">
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-secondary" onclick="closeModal('modal-participant')">Abbrechen</button>
-                <button class="btn-main" onclick="addLiveParticipant()">Hinzufügen</button>
+                <button class="btn-main" style="margin-top: 15px;" onclick="addLiveParticipant()">Hinzufügen</button>
             </div>
         </div>
     </div>
@@ -166,7 +170,7 @@
             <label>Endwertung - 0 bis 10</label><input type="number" id="r-overall" step="0.1" min="0" max="10">
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-secondary" onclick="closeModal('modal-rating')">Abbrechen</button>
-                <button class="btn-main" onclick="saveRatingFromModal()">Speichern</button>
+                <button class="btn-main" style="margin-top: 15px;" onclick="saveRatingFromModal()">Speichern</button>
             </div>
         </div>
     </div>
