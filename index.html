@@ -31,8 +31,17 @@
             <h1>Setup</h1>
         </header>
         <div class="content">
-            <label>Name des Tastings</label>
-            <input type="text" id="setup-name" placeholder="z.B. Islay vs. Speyside">
+            <div style="display: flex; gap: 10px;">
+                <div style="flex: 0.3;">
+                    <label>Nr.</label>
+                    <input type="number" id="setup-number" placeholder="z.B. 5" min="1">
+                </div>
+                <div style="flex: 1;">
+                    <label>Name des Tastings</label>
+                    <input type="text" id="setup-name" placeholder="z.B. Islay vs. Speyside">
+                </div>
+            </div>
+            
             <label>Datum</label>
             <input type="date" id="setup-date">
             
@@ -53,8 +62,15 @@
             <button class="btn-back" style="top: 15px; background: rgba(0,0,0,0.6); padding: 8px 12px; border-radius: 8px; white-space: nowrap;" onclick="exitToDashboard()">← Zurück</button>
             
             <div style="padding: 0 20px;">
-                <input type="text" id="grid-edit-name" onchange="updateTastingHeader()" 
-                       style="background: transparent; border: none; border-bottom: 1px solid var(--accent-color); color: var(--accent-color); font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 5px; border-radius: 0;">
+                <div style="display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin-bottom: 5px;">
+                    <div style="display: flex; align-items: center;">
+                        <span style="color: var(--accent-color); font-size: 24px; font-weight: bold;">#</span>
+                        <input type="number" id="grid-edit-number" onchange="updateTastingHeader()" 
+                               style="background: transparent; border: none; border-bottom: 1px solid var(--accent-color); color: var(--accent-color); font-size: 24px; font-weight: bold; text-align: center; width: 50px; border-radius: 0; padding: 0; margin-left: 2px;">
+                    </div>
+                    <input type="text" id="grid-edit-name" onchange="updateTastingHeader()" 
+                           style="background: transparent; border: none; border-bottom: 1px solid var(--accent-color); color: var(--accent-color); font-size: 24px; font-weight: bold; text-align: center; border-radius: 0; padding: 0; width: 100%; max-width: 200px;">
+                </div>
                 <input type="date" id="grid-edit-date" onchange="updateTastingHeader()" 
                        style="background: transparent; border: none; color: var(--secondary-text); font-size: 14px; text-align: center; width: auto; margin: 0 auto; display: block;">
             </div>
@@ -186,6 +202,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase4"></script>
+    <script src="app.js?v=firebase5"></script>
 </body>
 </html>

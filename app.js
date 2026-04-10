@@ -53,7 +53,8 @@ function syncToCloud() {
 // APP LOGIK (Dein Gold-Standard)
 // ==========================================
 
-let currentTasting = { id: null, name: '', date: '', participants: [], whiskies: [], ratings: {} };
+// NEU: number Attribut zum Tasting hinzugefügt
+let currentTasting = { id: null, number: '', name: '', date: '', participants: [], whiskies: [], ratings: {} };
 let editingWhiskyIndex = null;
 let currentRatingContext = { participant: null, whiskyIndex: null };
 
@@ -144,12 +145,15 @@ function updateParticipantDatalist() {
 
 // --- LIVE GRID ---
 function startTastingGrid() {
+    currentTasting.number = document.getElementById('setup-number').value || '';
     currentTasting.name = document.getElementById('setup-name').value || 'Unbenanntes Tasting';
     currentTasting.date = document.getElementById('setup-date').value;
+    
     if(!currentTasting.id) currentTasting.id = 't_' + Date.now();
     if(currentTasting.participants.length === 0) return alert("Bitte füge mindestens einen Teilnehmer hinzu!");
     
-    // NEU: Fülle die bearbeitbaren Felder im Header
+    // Felder im Header füllen
+    document.getElementById('grid-edit-number').value = currentTasting.number;
     document.getElementById('grid-edit-name').value = currentTasting.name;
     document.getElementById('grid-edit-date').value = currentTasting.date;
     
@@ -158,8 +162,9 @@ function startTastingGrid() {
     navigateTo('view-grid');
 }
 
-// NEU: Funktion um Änderungen an Name/Datum direkt in das Tasting-Objekt zu übernehmen
+// Speichert Änderungen an Nummer/Name/Datum direkt in das Tasting-Objekt
 function updateTastingHeader() {
+    currentTasting.number = document.getElementById('grid-edit-number').value;
     currentTasting.name = document.getElementById('grid-edit-name').value;
     currentTasting.date = document.getElementById('grid-edit-date').value;
 }
@@ -303,8 +308,12 @@ function loadDashboard() {
         tastings.filter(t => t.date.startsWith(y)).forEach(t => {
             let winData = calculateWinnerForDashboard(t);
             let winH = (winData && winData.whisky) ? `<div style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name} <br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
+            
+            // NEU: Anzeige der Tasting Nummer im Dashboard
+            let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
+            
             html += `<li class="tasting-item">
-                <strong>${t.name}</strong> <br>
+                <strong>${numDisplay}${t.name}</strong> <br>
                 <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${t.participants.length} | 🥃 ${t.whiskies.length}</span>
                 ${winH}
                 <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
@@ -322,9 +331,10 @@ function resumeTasting(id) {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     currentTasting = JSON.parse(JSON.stringify(tastings.find(t => t.id === id))); 
     
-    // NEU: Fülle die bearbeitbaren Felder beim Resume
-    document.getElementById('grid-edit-name').value = currentTasting.name;
-    document.getElementById('grid-edit-date').value = currentTasting.date;
+    // Felder füllen beim Fortsetzen
+    document.getElementById('grid-edit-number').value = currentTasting.number || '';
+    document.getElementById('grid-edit-name').value = currentTasting.name || '';
+    document.getElementById('grid-edit-date').value = currentTasting.date || '';
     
     renderGrid(); navigateTo('view-grid');
 }
@@ -355,7 +365,7 @@ function finishAndShowResults() {
 }
 
 function exitToDashboard() {
-    currentTasting = { id: null, name: '', date: '', participants: [], whiskies: [], ratings: {} };
+    currentTasting = { id: null, number: '', name: '', date: '', participants: [], whiskies: [], ratings: {} };
     loadDashboard(); navigateTo('view-dashboard');
 }
 
@@ -426,7 +436,8 @@ function exportAllTastingsToCSV() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     if(tastings.length === 0) return alert("Keine Tastings vorhanden!");
     
-    let csv = "\uFEFFTasting;Datum;Flight;Whisky;Destille;Art;Land;Alter;Alk. %;Durchschnitt\n";
+    // NEU: Spalte für Tasting Nummer ("Nr.") hinzugefügt
+    let csv = "\uFEFFNr.;Tasting;Datum;Flight;Whisky;Destille;Art;Land;Alter;Alk. %;Durchschnitt\n";
     
     tastings.forEach(t => {
         if(!t.whiskies) return;
@@ -441,7 +452,8 @@ function exportAllTastingsToCSV() {
             let avg = c > 0 ? (tot/c).toFixed(2) : "0,00";
             let abv = (w.abv || '').toString().replace('.', ',');
             
-            csv += `${t.name};${t.date};${w.flight || 1};${w.name};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${avg.replace('.', ',')}\n`;
+            // NEU: t.number wird ganz vorne in die Zeile eingefügt
+            csv += `${t.number || ''};${t.name};${t.date};${w.flight || 1};${w.name};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${avg.replace('.', ',')}\n`;
         });
     });
     
