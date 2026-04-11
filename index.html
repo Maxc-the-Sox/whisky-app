@@ -233,9 +233,9 @@
             <label>Zu welchem Flight gehört er?</label>
             <input type="number" id="w-flight" value="1" min="1" style="border: 2px solid var(--accent-color);">
             
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-secondary" onclick="closeModal('modal-whisky')">Abbrechen</button>
-                <button class="btn-main" style="margin-top: 15px;" onclick="saveWhiskyFromModal()">Speichern</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
+                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-whisky')">Abbrechen</button>
+                <button class="btn-main" style="margin: 0;" onclick="saveWhiskyFromModal()">Speichern</button>
             </div>
         </div>
     </div>
@@ -245,9 +245,9 @@
             <h2>Teilnehmer hinzufügen</h2>
             <label>Name</label>
             <input type="text" id="live-participant-name" list="known-participants" placeholder="Name">
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-secondary" onclick="closeModal('modal-participant')">Abbrechen</button>
-                <button class="btn-main" style="margin-top: 15px;" onclick="addLiveParticipant()">Hinzufügen</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
+                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-participant')">Abbrechen</button>
+                <button class="btn-main" style="margin: 0;" onclick="addLiveParticipant()">Hinzufügen</button>
             </div>
         </div>
     </div>
@@ -260,9 +260,9 @@
             <label>Geschmack - 0 bis 10</label><input type="number" id="r-taste" step="0.1" min="0" max="10">
             <label>Abgang - 0 bis 10</label><input type="number" id="r-finish" step="0.1" min="0" max="10">
             <label>Endwertung - 0 bis 10</label><input type="number" id="r-overall" step="0.1" min="0" max="10">
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-secondary" onclick="closeModal('modal-rating')">Abbrechen</button>
-                <button class="btn-main" style="margin-top: 15px;" onclick="saveRatingFromModal()">Speichern</button>
+            <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
+                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-rating')">Abbrechen</button>
+                <button class="btn-main" style="margin: 0;" onclick="saveRatingFromModal()">Speichern</button>
             </div>
         </div>
     </div>
@@ -270,6 +270,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase17"></script>
+    <script src="app.js?v=firebase18"></script>
 </body>
 </html>
