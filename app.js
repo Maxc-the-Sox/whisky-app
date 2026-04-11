@@ -95,7 +95,6 @@ async function compressAndUploadImage(file) {
     });
 }
 
-// NEU: Funktion für das Tasting-Gruppenfoto
 async function uploadGroupPhoto(event) {
     let file = event.target.files[0];
     if (!file) return;
@@ -110,8 +109,8 @@ async function uploadGroupPhoto(event) {
     
     try {
         let url = await compressAndUploadImage(file);
-        currentTasting.image = url; // Speichert den Link für das gesamte Tasting
-        saveTasting(); // Speichert direkt, damit es sicher ist
+        currentTasting.image = url; 
+        saveTasting(); 
         btn.innerText = "📸 Foto ändern";
         status.style.display = "block";
     } catch(e) {
@@ -133,11 +132,15 @@ function updateGroupPhotoUI() {
     }
 }
 
+function showImageFullscreen(url) {
+    document.getElementById('fullscreen-image').src = url;
+    document.getElementById('modal-image-view').style.display = 'flex';
+}
+
 // ==========================================
 // APP LOGIK
 // ==========================================
 
-// NEU: currentTasting hat jetzt die Variable 'image'
 let currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {} };
 let editingWhiskyIndex = null;
 let currentRatingContext = { participant: null, whiskyIndex: null };
@@ -461,8 +464,9 @@ function loadDashboard() {
             let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
             
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
-            // NEU: Gruppenfoto Symbol in der Überschrift, falls vorhanden
-            let groupImgIcon = t.image ? ' <span style="font-size:16px;">📸</span>' : '';
+            
+            // ÄNDERUNG: Cleaner Icon für das Gruppenfoto ohne Box
+            let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
             
             html += `<li class="tasting-item">
                 <strong>${numDisplay}${t.name}${groupImgIcon}</strong> <br>
@@ -500,7 +504,6 @@ function showTastingResults(id) {
     let numDisplay = currentTasting.number ? `#${currentTasting.number} ` : "";
     document.getElementById('results-title').innerText = numDisplay + currentTasting.name;
 
-    // NEU: Gruppenfoto anzeigen
     let groupPhoto = document.getElementById('results-group-photo');
     if (currentTasting.image) {
         groupPhoto.src = currentTasting.image;
@@ -542,7 +545,6 @@ function showTastingResults(id) {
 
 function finishAndShowResults() { saveTasting(); showTastingResults(currentTasting.id); }
 
-// NEU: currentTasting Reset schließt jetzt das image mit ein
 function exitToDashboard() { currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {} }; loadDashboard(); navigateTo('view-dashboard'); }
 
 function saveToMasterDB(w) {
@@ -617,7 +619,6 @@ function exportAllTastingsToCSV() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     if(tastings.length === 0) return alert("Keine Tastings vorhanden!");
     
-    // Spalte für Tasting-Gruppenfoto ergänzt
     let csv = "\uFEFFNr.;Tasting;Datum;Tasting-Bild;Flight;Whisky;Fass;Finish;Destille;Art;Land;Alter;Alk. %;Whisky-Bild;Durchschnitt\n";
     
     tastings.forEach(t => {
