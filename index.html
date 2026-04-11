@@ -87,11 +87,11 @@
     <section id="view-results" class="view" style="display: none;">
         <header>
             <h1 style="color: #f1c40f;">🏆 Ergebnisse</h1>
-            <p id="results-title">Tasting Name</p>
+            <p id="results-title" style="color: var(--secondary-text); font-size: 18px; margin-top: 5px;">Tasting Name</p>
         </header>
         <div class="content">
             <div id="podium-container"></div>
-            <button class="btn-main" onclick="exitToDashboard()">Tasting abschließen</button>
+            <button class="btn-main" onclick="exitToDashboard()">Zum Dashboard zurück</button>
         </div>
     </section>
 
@@ -162,6 +162,21 @@
                 <option value="Single Malt (Deutschland)"></option>
             </datalist>
 
+            <datalist id="whisky-casks">
+                <option value="Ex-Bourbon Cask"></option>
+                <option value="Sherry Oloroso"></option>
+                <option value="Pedro Ximénez (PX) Sherry"></option>
+                <option value="Ruby Port"></option>
+                <option value="Port Cask"></option>
+                <option value="Rum Cask"></option>
+                <option value="Virgin Oak"></option>
+                <option value="Wine Cask"></option>
+                <option value="Fetească Neagră"></option>
+                <option value="Rioja"></option>
+                <option value="Sauternes"></option>
+                <option value="Madeira"></option>
+            </datalist>
+
             <datalist id="countries">
                 <option value="Schottland"></option>
                 <option value="Irland"></option>
@@ -180,6 +195,10 @@
 
             <label>Name</label><input type="text" id="w-name" list="known-whiskies" onchange="autoFillWhisky(this)">
             <label>Destille</label><input type="text" id="w-distillery" list="known-distilleries">
+            
+            <label>Fass / Reifung</label>
+            <input type="text" id="w-cask" list="whisky-casks" placeholder="z.B. Ruby Port Finish">
+
             <div style="display: flex; gap: 10px;">
                 <div style="flex:1"><label>Art</label><input type="text" id="w-type" list="whisky-types"></div>
                 <div style="flex:1"><label>Land</label><input type="text" id="w-country" list="countries"></div>
@@ -228,6 +247,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase10"></script>
+    <script src="app.js?v=firebase13"></script>
 </body>
 </html>
