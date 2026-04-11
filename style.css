@@ -62,23 +62,23 @@ td:first-child:active { background-color: #333; }
 
 .modal-content { 
     background-color: var(--bg-color); 
-    margin: 5% auto; /* Extra weit oben platziert für iPhone Tastatur */
+    margin: 5% auto; 
     border: 1px solid var(--accent-color); 
     border-radius: 12px; 
     width: 90%; 
     max-width: 400px; 
-    max-height: 85vh; /* Verhindert, dass das Fenster aus dem Bildschirm ragt */
+    max-height: 85vh; 
     box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
-    display: flex; /* Teilt das Fenster in saubere Blöcke auf */
+    display: flex; 
     flex-direction: column;
     overflow: hidden; 
 }
 
 .modal-body {
     padding: 20px;
-    overflow-y: auto; /* Nur DIESER Teil scrollt */
-    flex: 1; /* Nimmt den restlichen Platz ein */
-    -webkit-overflow-scrolling: touch; /* Weiches Scrollen am iPhone */
+    overflow-y: auto; 
+    flex: 1; 
+    -webkit-overflow-scrolling: touch; 
 }
 
 .modal-footer {
@@ -87,7 +87,6 @@ td:first-child:active { background-color: #333; }
     border-top: 1px solid #444;
     display: flex;
     gap: 10px;
-    /* Dieser Teil bleibt immer starr unten stehen! */
 }
 .modal-footer button { margin: 0 !important; }
 
@@ -104,3 +103,19 @@ td:first-child:active { background-color: #333; }
 .detail-grid div { background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333; }
 .detail-grid strong { color: var(--accent-color); display: block; font-size: 12px; margin-bottom: 3px; }
 .img-preview-container { margin: 0; }
+
+/* NEU: Styles für den Whisky-Schrank */
+.search-input {
+    width: 100%;
+    padding: 15px;
+    background: #111;
+    border: 2px solid var(--accent-color);
+    border-radius: 30px;
+    color: white;
+    font-size: 16px;
+    margin-bottom: 25px;
+    outline: none;
+    text-align: center;
+}
+.search-input:focus { box-shadow: 0 0 10px rgba(211, 84, 0, 0.5); }
+.cabinet-card { text-align: left; margin-bottom: 15px; }

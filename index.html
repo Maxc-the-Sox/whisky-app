@@ -18,11 +18,24 @@
         </header>
         <div class="content">
             <button class="btn-main" onclick="navigateTo('view-setup')">Neues Tasting starten</button>
+            <button class="btn-secondary" style="border-color: #e67e22; color: #e67e22;" onclick="loadCabinet(); navigateTo('view-cabinet')">🗄️ Dein Whisky-Schrank</button>
             <button class="btn-secondary" style="border-color: #9b59b6; color: #9b59b6;" onclick="loadStats(); navigateTo('view-stats')">📊 Hall of Fame & Statistiken</button>
             <button class="btn-secondary" style="border-color: #666; color: #ccc;" onclick="navigateTo('view-settings')">⚙️ Einstellungen & Backup</button>
             
             <h2 style="margin-top: 30px;">Deine Tastings</h2>
             <div id="tasting-list-container"></div>
+        </div>
+    </section>
+
+    <section id="view-cabinet" class="view" style="display: none;">
+        <header>
+            <button class="btn-back" onclick="navigateTo('view-dashboard')">← Zurück</button>
+            <h1 style="color: #e67e22;">🗄️ Whisky-Schrank</h1>
+            <p>Alle eure getrunkenen Flaschen</p>
+        </header>
+        <div class="content">
+            <input type="text" id="search-cabinet" class="search-input" onkeyup="filterCabinet()" placeholder="🔍 Suchen (Name, Destille, Fass...)">
+            <div id="cabinet-container"></div>
         </div>
     </section>
 
@@ -319,6 +332,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase26"></script>
+    <script src="app.js?v=firebase27"></script>
 </body>
 </html>

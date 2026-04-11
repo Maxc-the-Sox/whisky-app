@@ -464,8 +464,6 @@ function loadDashboard() {
             let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
             
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
-            
-            // ÄNDERUNG: Cleaner Icon für das Gruppenfoto ohne Box
             let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
             
             html += `<li class="tasting-item">
@@ -752,4 +750,94 @@ function showParticipantStats() {
         html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
     });
     container.innerHTML = html;
+}
+
+// NEU: Whisky-Schrank Logik
+function loadCabinet() {
+    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
+    let cabinetWhiskys = {};
+
+    tastings.forEach(t => {
+        if(t.whiskies) {
+            t.whiskies.forEach((w, i) => {
+                let key = w.name + '|' + (w.distillery || '') + '|' + (w.age || '') + '|' + (w.cask || '') + '|' + (w.finish || '');
+
+                if(!cabinetWhiskys[key]) {
+                    cabinetWhiskys[key] = { ...w, tot: 0, count: 0, inTastings: new Set() };
+                }
+
+                let tLabel = t.number ? `#${t.number} ${t.name}` : t.name;
+                cabinetWhiskys[key].inTastings.add(tLabel);
+
+                if(t.participants) {
+                    t.participants.forEach(p => {
+                        let r = t.ratings && t.ratings[p] ? t.ratings[p][i] : null;
+                        if(r && r.overall && !isNaN(parseFloat(r.overall))) {
+                            cabinetWhiskys[key].tot += parseFloat(r.overall);
+                            cabinetWhiskys[key].count++;
+                        }
+                    });
+                }
+            });
+        }
+    });
+
+    let arr = Object.values(cabinetWhiskys).sort((a,b) => a.name.localeCompare(b.name));
+    let container = document.getElementById('cabinet-container');
+    let html = '';
+
+    arr.forEach(w => {
+        let avg = w.count > 0 ? (w.tot / w.count).toFixed(2) : "0.00";
+        w.avg = parseFloat(avg); 
+
+        let imgHtml = w.image ? `<img src="${w.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #555;">` : `<div style="width: 80px; height: 80px; border-radius: 8px; background: #222; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 24px;">🥃</div>`;
+
+        let ageStr = w.age ? (isNaN(w.age) ? w.age : `${w.age}J`) : '-';
+        let abvStr = w.abv ? `${w.abv}%` : '-';
+        let typeStr = w.type || '-';
+        let countryStr = w.country || '-';
+        let caskStr = w.cask || '-';
+        let finishStr = w.finish || '-';
+
+        let tastingsStr = Array.from(w.inTastings).join(', ');
+
+        html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')">
+            <div style="display: flex; gap: 15px;">
+                ${imgHtml}
+                <div style="flex: 1; min-width: 0;">
+                    <h3 style="margin: 0 0 3px 0; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${w.name}</h3>
+                    <div style="font-size: 12px; color: #ccc; margin-bottom: 8px;">${w.distillery || 'Unbekannte Destille'}</div>
+                    <div style="font-size: 11px; color: #aaa; line-height: 1.4; display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
+                        <div><strong>Alter:</strong> ${ageStr}</div>
+                        <div><strong>Alk:</strong> ${abvStr}</div>
+                        <div><strong>Art:</strong> ${typeStr}</div>
+                        <div><strong>Land:</strong> ${countryStr}</div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; justify-content: center; align-items: flex-end;">
+                    <div class="score-badge" style="margin: 0; font-size: 16px; padding: 5px 10px;">Ø ${avg}</div>
+                </div>
+            </div>
+            <div style="font-size: 11px; color: #aaa; margin-top: 8px; line-height: 1.4; display: grid; grid-template-columns: 1fr 1fr; gap: 2px;">
+                <div><strong>Fass:</strong> ${caskStr}</div>
+                <div><strong>Finish:</strong> ${finishStr}</div>
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: #999; border-top: 1px solid #444; padding-top: 6px;">
+                <strong>🗓️ Getrunken in:</strong> ${tastingsStr}
+            </div>
+        </div>`;
+    });
+
+    if(arr.length === 0) html = "<p style='text-align:center;'>Dein Whisky-Schrank ist noch leer.</p>";
+    container.innerHTML = html;
+}
+
+function filterCabinet() {
+    let query = document.getElementById('search-cabinet').value.toLowerCase();
+    let cards = document.querySelectorAll('.cabinet-card');
+    cards.forEach(card => {
+        let text = card.innerText.toLowerCase();
+        if(text.includes(query)) card.style.display = 'block';
+        else card.style.display = 'none';
+    });
 }
