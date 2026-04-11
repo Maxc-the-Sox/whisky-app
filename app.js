@@ -180,7 +180,9 @@ function renderGrid() {
                 currentFlight = c.f; span = 1;
             } else { span++; }
             
-            let title = c.w.name + (c.w.age ? ` (${c.w.age}J)` : '');
+            // ÄNDERUNG: Hier wird geprüft, ob es NA/NAS ist oder eine Zahl
+            let ageStr = c.w.age ? (isNaN(c.w.age) ? ` (${c.w.age})` : ` (${c.w.age}J)`) : '';
+            let title = c.w.name + ageStr;
             let caskInfo = c.w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic; font-weight:normal;">${c.w.cask}</span>` : "";
             
             whiskyRow += `<th class="whisky-header">
@@ -367,9 +369,12 @@ function showTastingResults(id) {
         let rankClass = (i === 0 && r.avg > 0) ? "winner" : (i === res.length-1 && res.length > 1) ? "loser" : "";
         let caskHtml = r.cask ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-top:-5px; margin-bottom:8px;">${r.cask}</div>` : '';
         
+        // ÄNDERUNG: NA Logik in den Resultaten
+        let ageStr = r.age ? (isNaN(r.age) ? ` (${r.age})` : ` (${r.age}J)`) : '';
+        
         container.innerHTML += `<div class="result-card ${rankClass}">
             <div style="color:var(--secondary-text); font-size:14px;">${i+1}. Platz</div>
-            <h3>${r.name} ${r.age ? `(${r.age}J)` : ''}</h3>
+            <h3>${r.name}${ageStr}</h3>
             ${caskHtml}
             <div class="score-badge">Ø ${r.avg.toFixed(2)} Punkte</div>
         </div>`;
@@ -494,7 +499,6 @@ function loadStats() {
         if(t.whiskies) {
             t.whiskies.forEach((w, i) => {
                 let key = w.name + (w.distillery ? `_${w.distillery}` : '');
-                // ÄNDERUNG: Fass (cask) wird hier mit gespeichert
                 if(!globalWhiskys[key]) globalWhiskys[key] = { name: w.name, dist: w.distillery, age: w.age, cask: w.cask, tot: 0, count: 0 };
                 if(t.participants) {
                     t.participants.forEach(p => {
@@ -517,20 +521,24 @@ function loadStats() {
     let globalTop10 = [...globalArr].sort((a,b) => b.avg - a.avg).slice(0, 10);
     let globalFlop10 = [...globalArr].sort((a,b) => a.avg - b.avg).slice(0, 10);
     
-    // ÄNDERUNG: Fass wird im globalen Top 10 HTML hinzugefügt
     let gHtml = '';
     globalTop10.forEach((w, idx) => {
         let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
         let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        gHtml += `<div class="result-card" style="border-color: ${borderCol};"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name} ${w.age ? `(${w.age}J)` : ''}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
+        // ÄNDERUNG: NA Logik in Top 10
+        let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        
+        gHtml += `<div class="result-card" style="border-color: ${borderCol};"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
     });
     document.getElementById('global-top-container').innerHTML = gHtml || "<p style='text-align:center;'>Noch keine Daten.</p>";
     
-    // ÄNDERUNG: Fass wird im globalen Flop 10 HTML hinzugefügt
     let fHtml = '';
     globalFlop10.forEach((w, idx) => {
         let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        fHtml += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name} ${w.age ? `(${w.age}J)` : ''}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
+        // ÄNDERUNG: NA Logik in Flop 10
+        let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        
+        fHtml += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
     });
     document.getElementById('global-flop-container').innerHTML = fHtml || "<p style='text-align:center;'>Noch keine Daten.</p>";
     
@@ -552,7 +560,6 @@ function showParticipantStats() {
             let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null;
             if(r && r.overall && !isNaN(parseFloat(r.overall))) {
                 let score = parseFloat(r.overall);
-                // ÄNDERUNG: Fass (cask) wird in mein Profil gepusht
                 myWhiskys.push({ name: w.name, dist: w.distillery, age: w.age, cask: w.cask, score: score, tasting: t.name });
                 if(w.distillery) {
                     if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 };
@@ -572,18 +579,23 @@ function showParticipantStats() {
     });
     let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;"><div>🥃 ${myWhiskys.length} bewertet</div><div style="color:#3498db; font-weight:bold;">${bestDist.name}</div><div style="font-size:12px; color:#aaa;">Lieblings-Destille (Ø ${bestDist.avg.toFixed(2)})</div></div>`;
     
-    // ÄNDERUNG: Fass wird in der persönlichen Top 10 Liste eingefügt
     html += `<h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
     top10.forEach((w, idx) => {
+        let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
         let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        html += `<div class="result-card"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">${w.tasting}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
+        // ÄNDERUNG: NA Logik in persönlicher Top 10
+        let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        
+        html += `<div class="result-card" style="border-color: ${borderCol};"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
     });
     
-    // ÄNDERUNG: Fass wird in der persönlichen Flop 10 Liste eingefügt
     html += `<h3 style="color:#e74c3c; text-align:center; margin-top:20px;">☠️ Flop 10</h3>`;
     bottom10.forEach((w, idx) => {
         let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        html += `<div class="result-card"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">${w.tasting}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
+        // ÄNDERUNG: NA Logik in persönlicher Flop 10
+        let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        
+        html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
     });
     container.innerHTML = html;
 }
