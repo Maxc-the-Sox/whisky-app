@@ -181,7 +181,6 @@ function renderGrid() {
             } else { span++; }
             
             let title = c.w.name + (c.w.age ? ` (${c.w.age}J)` : '');
-            // ÄNDERUNG: font-size von 10px auf 12px vergrößert
             let caskInfo = c.w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic; font-weight:normal;">${c.w.cask}</span>` : "";
             
             whiskyRow += `<th class="whisky-header">
@@ -311,11 +310,13 @@ function loadDashboard() {
         html += `<details class="year-details" ${openAttr}><summary class="year-summary">${y} (${tastings.filter(t=>t.date.startsWith(y)).length})</summary><ul style="list-style:none; padding:0; margin-top:15px;">`;
         tastings.filter(t => t.date.startsWith(y)).forEach(t => {
             let winData = calculateWinnerForDashboard(t);
-            let winH = (winData && winData.whisky) ? `<div style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name} <br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
+            
+            // ÄNDERUNG: Fass wird im Dashboard-Kästchen ergänzt
+            let caskDashInfo = (winData && winData.whisky && winData.whisky.cask) ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${winData.whisky.cask}</span>` : "";
+            let winH = (winData && winData.whisky) ? `<div style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
             
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
             
-            // ÄNDERUNG: Neue Button Reihenfolge (Wertung -> Excel -> Bearbeiten -> Löschen)
             html += `<li class="tasting-item">
                 <strong>${numDisplay}${t.name}</strong> <br>
                 <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${t.participants.length} | 🥃 ${t.whiskies.length}</span>
@@ -353,7 +354,6 @@ function showTastingResults(id) {
     let numDisplay = currentTasting.number ? `#${currentTasting.number} ` : "";
     document.getElementById('results-title').innerText = numDisplay + currentTasting.name;
 
-    // ÄNDERUNG: Cask in den Results gespeichert
     let res = currentTasting.whiskies.map((w, index) => {
         let tot = 0, count = 0;
         currentTasting.participants.forEach(p => {
@@ -364,7 +364,6 @@ function showTastingResults(id) {
         return { name: w.name, age: w.age, cask: w.cask, avg: parseFloat(avg) };
     }).sort((a,b)=>b.avg - a.avg);
 
-    // ÄNDERUNG: Cask wird in der Wertung elegant unterm Namen angezeigt
     res.forEach((r, i) => {
         let rankClass = (i === 0 && r.avg > 0) ? "winner" : (i === res.length-1 && res.length > 1) ? "loser" : "";
         let caskHtml = r.cask ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-top:-5px; margin-bottom:8px;">${r.cask}</div>` : '';
