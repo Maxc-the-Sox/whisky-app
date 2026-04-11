@@ -104,7 +104,7 @@ td:first-child:active { background-color: #333; }
 .detail-grid strong { color: var(--accent-color); display: block; font-size: 12px; margin-bottom: 3px; }
 .img-preview-container { margin: 0; }
 
-/* NEU: Styles für den Whisky-Schrank */
+/* Styles für den Whisky-Schrank */
 .search-input {
     width: 100%;
     padding: 15px;
@@ -119,3 +119,34 @@ td:first-child:active { background-color: #333; }
 }
 .search-input:focus { box-shadow: 0 0 10px rgba(211, 84, 0, 0.5); }
 .cabinet-card { text-align: left; margin-bottom: 15px; }
+
+/* NEU: Styles für Kommentare */
+.comment-box {
+    background: #111;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    position: relative;
+    border: 1px solid #333;
+    text-align: left;
+}
+.comment-author {
+    color: var(--accent-color);
+    font-weight: bold;
+    margin-bottom: 3px;
+    font-size: 12px;
+}
+.comment-text {
+    color: #ddd;
+    line-height: 1.4;
+    padding-right: 20px; /* Platz für den Mülleimer */
+}
+.comment-delete {
+    position: absolute;
+    right: 10px;
+    top: 10px;
+    cursor: pointer;
+    color: #e74c3c;
+    font-size: 14px;
+}
