@@ -142,12 +142,33 @@
         </div>
     </section>
 
+    <div id="modal-whisky-details" class="modal">
+        <div class="modal-content" style="padding: 0; text-align: center; position: relative;">
+            <button class="btn-back" style="position: absolute; top: 10px; right: 10px; left: auto; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 35px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 20px;" onclick="closeModal('modal-whisky-details')">✕</button>
+            
+            <img id="detail-img" src="" style="width: 100%; max-height: 350px; object-fit: cover; border-top-left-radius: 12px; border-top-right-radius: 12px; display: none;">
+            
+            <div style="padding: 20px;">
+                <h2 id="detail-name" style="margin-top: 0; font-size: 22px; margin-bottom: 5px;"></h2>
+                <div id="detail-distillery" style="color: var(--secondary-text); font-size: 16px;"></div>
+                
+                <div class="detail-grid">
+                    <div><strong>Art</strong> <span id="detail-type">-</span></div>
+                    <div><strong>Land</strong> <span id="detail-country">-</span></div>
+                    <div><strong>Alter</strong> <span id="detail-age">-</span></div>
+                    <div><strong>Alkohol</strong> <span id="detail-abv">-</span></div>
+                    <div style="grid-column: span 2;"><strong>Fass</strong> <span id="detail-cask">-</span></div>
+                    <div style="grid-column: span 2;"><strong>Finish</strong> <span id="detail-finish">-</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-whisky" class="modal">
         <div class="modal-content">
             <h2 id="modal-whisky-title">Whisky eintragen</h2>
             <datalist id="known-whiskies"></datalist>
             <datalist id="known-distilleries"></datalist>
-            
             <datalist id="whisky-types">
                 <option value="Single Malt Scotch"></option>
                 <option value="Blended Malt Scotch"></option>
@@ -161,7 +182,6 @@
                 <option value="Single Malt (Japan)"></option>
                 <option value="Single Malt (Deutschland)"></option>
             </datalist>
-
             <datalist id="whisky-casks">
                 <option value="Ex-Bourbon Cask"></option>
                 <option value="Sherry Oloroso"></option>
@@ -176,7 +196,6 @@
                 <option value="Sauternes"></option>
                 <option value="Madeira"></option>
             </datalist>
-
             <datalist id="whisky-finishes">
                 <option value="Sherry Oloroso"></option>
                 <option value="Pedro Ximénez (PX)"></option>
@@ -191,7 +210,6 @@
                 <option value="Stout Cask"></option>
                 <option value="Virgin Oak"></option>
             </datalist>
-
             <datalist id="countries">
                 <option value="Schottland"></option>
                 <option value="Irland"></option>
@@ -208,20 +226,23 @@
                 <option value="Österreich"></option>
             </datalist>
 
+            <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px;">
+                <label style="margin-top: 0; text-align: center;">Flaschen-Foto (Optional)</label>
+                <input type="file" id="w-image-input" accept="image/*" style="display: none;" onchange="previewImage(event)">
+                <button class="btn-secondary" style="margin-top: 10px; border-color: #3498db; color: #3498db; padding: 10px;" onclick="document.getElementById('w-image-input').click()">📷 Foto machen / wählen</button>
+                <div class="img-preview-container">
+                    <img id="w-image-preview" src="">
+                </div>
+                <input type="hidden" id="w-image-hidden">
+            </div>
+
             <label>Name</label><input type="text" id="w-name" list="known-whiskies" onchange="autoFillWhisky(this)">
             <label>Destille</label><input type="text" id="w-distillery" list="known-distilleries">
             
             <div style="display: flex; gap: 10px;">
-                <div style="flex:1">
-                    <label>Fass</label>
-                    <input type="text" id="w-cask" list="whisky-casks" placeholder="z.B. Ex-Bourbon">
-                </div>
-                <div style="flex:1">
-                    <label>Finish</label>
-                    <input type="text" id="w-finish" list="whisky-finishes" placeholder="z.B. Rioja">
-                </div>
+                <div style="flex:1"><label>Fass</label><input type="text" id="w-cask" list="whisky-casks" placeholder="z.B. Ex-Bourbon"></div>
+                <div style="flex:1"><label>Finish</label><input type="text" id="w-finish" list="whisky-finishes" placeholder="z.B. Rioja"></div>
             </div>
-
             <div style="display: flex; gap: 10px;">
                 <div style="flex:1"><label>Art</label><input type="text" id="w-type" list="whisky-types"></div>
                 <div style="flex:1"><label>Land</label><input type="text" id="w-country" list="countries"></div>
@@ -235,7 +256,7 @@
             
             <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
                 <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-whisky')">Abbrechen</button>
-                <button class="btn-main" style="margin: 0;" onclick="saveWhiskyFromModal()">Speichern</button>
+                <button id="btn-save-whisky" class="btn-main" style="margin: 0;" onclick="saveWhiskyFromModal()">Speichern</button>
             </div>
         </div>
     </div>
@@ -270,6 +291,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase18"></script>
+    <script src="app.js?v=firebase19"></script>
 </body>
 </html>

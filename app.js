@@ -1,6 +1,8 @@
 // ==========================================
-// FIREBASE SETUP & CLOUD SYNC
+// FIREBASE & IMGBB SETUP
 // ==========================================
+const IMGBB_API_KEY = "fe4b31bdb30879fdf3f123b5c5c5a845";
+
 const firebaseConfig = {
   apiKey: "AIzaSyCAn1PDTbgIhdGMnCCuP0DBqGQ1wAf1FQ0",
   authDomain: "dramscore-8328d.firebaseapp.com",
@@ -16,9 +18,7 @@ const database = firebase.database();
 
 window.onload = function() {
     database.ref('dramscore_db').once('value').then((snapshot) => {
-        if (!snapshot.exists()) {
-            syncToCloud();
-        }
+        if (!snapshot.exists()) syncToCloud();
     });
 
     database.ref('dramscore_db').on('value', (snapshot) => {
@@ -28,13 +28,10 @@ window.onload = function() {
             if(data.whiskies) localStorage.setItem('whiskyDB', data.whiskies);
             if(data.participants) localStorage.setItem('participantDB', data.participants);
             
-            if(document.getElementById('view-dashboard').style.display !== 'none') {
-                loadDashboard();
-            }
+            if(document.getElementById('view-dashboard').style.display !== 'none') loadDashboard();
             updateParticipantDatalist();
         }
     });
-
     document.getElementById('setup-date').valueAsDate = new Date();
 };
 
@@ -43,6 +40,59 @@ function syncToCloud() {
         tastings: localStorage.getItem('whiskyTastings') || "[]",
         whiskies: localStorage.getItem('whiskyDB') || "[]",
         participants: localStorage.getItem('participantDB') || "[]"
+    });
+}
+
+// ==========================================
+// BILD-KOMPRESSOR & UPLOAD (IMGBB)
+// ==========================================
+function previewImage(event) {
+    let file = event.target.files[0];
+    if(file) {
+        let prev = document.getElementById('w-image-preview');
+        prev.src = URL.createObjectURL(file);
+        prev.style.display = 'inline-block';
+    }
+}
+
+async function compressAndUploadImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 1200; // Genug für knackscharfe Etiketten
+                const MAX_HEIGHT = 1200;
+                let width = img.width;
+                let height = img.height;
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
+                canvas.width = width; canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Auf 85% Qualität komprimieren (~300kb)
+                const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+                
+                const formData = new FormData();
+                formData.append("image", base64Data);
+                
+                fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => resolve(data.data.url))
+                .catch(err => reject(err));
+            };
+        };
     });
 }
 
@@ -67,11 +117,7 @@ function addParticipant() {
     if(name && !currentTasting.participants.includes(name)) {
         currentTasting.participants.push(name);
         let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
-        if(!pDB.includes(name)) { 
-            pDB.push(name); 
-            localStorage.setItem('participantDB', JSON.stringify(pDB)); 
-            syncToCloud(); 
-        }
+        if(!pDB.includes(name)) { pDB.push(name); localStorage.setItem('participantDB', JSON.stringify(pDB)); syncToCloud(); }
         updateParticipantList(); updateParticipantDatalist(); input.value = '';
     }
 }
@@ -82,15 +128,8 @@ function addLiveParticipant() {
     if(name && !currentTasting.participants.includes(name)) {
         currentTasting.participants.push(name);
         let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
-        if(!pDB.includes(name)) { 
-            pDB.push(name); 
-            localStorage.setItem('participantDB', JSON.stringify(pDB)); 
-            syncToCloud(); 
-        }
-        updateParticipantDatalist();
-        input.value = '';
-        closeModal('modal-participant');
-        renderGrid();
+        if(!pDB.includes(name)) { pDB.push(name); localStorage.setItem('participantDB', JSON.stringify(pDB)); syncToCloud(); }
+        updateParticipantDatalist(); input.value = ''; closeModal('modal-participant'); renderGrid();
     }
 }
 
@@ -122,16 +161,10 @@ function removeWhisky(idx) {
 function updateParticipantList() {
     const ul = document.getElementById('participant-list');
     ul.innerHTML = '';
-    currentTasting.participants.forEach(name => {
-        ul.innerHTML += `<li>${name} <span style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="removeParticipant('${name}')">✕</span></li>`;
-    });
+    currentTasting.participants.forEach(name => { ul.innerHTML += `<li>${name} <span style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="removeParticipant('${name}')">✕</span></li>`; });
 }
 
-function removeParticipant(name) {
-    currentTasting.participants = currentTasting.participants.filter(p => p !== name);
-    updateParticipantList();
-}
-
+function removeParticipant(name) { currentTasting.participants = currentTasting.participants.filter(p => p !== name); updateParticipantList(); }
 function updateParticipantDatalist() {
     let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
     let list = document.getElementById('known-participants');
@@ -152,9 +185,7 @@ function startTastingGrid() {
     document.getElementById('grid-edit-name').value = currentTasting.name;
     document.getElementById('grid-edit-date').value = currentTasting.date;
     
-    updateDatalists();
-    renderGrid();
-    navigateTo('view-grid');
+    updateDatalists(); renderGrid(); navigateTo('view-grid');
 }
 
 function updateTastingHeader() {
@@ -172,8 +203,7 @@ function renderGrid() {
     let whiskyRow = `<tr>`;
 
     if (cols.length > 0) {
-        let currentFlight = cols[0].f;
-        let span = 0;
+        let currentFlight = cols[0].f; let span = 0;
         cols.forEach((c) => {
             if (c.f !== currentFlight) {
                 flightRow += `<th colspan="${span}" class="flight-header">Flight ${currentFlight}</th>`;
@@ -181,16 +211,15 @@ function renderGrid() {
             } else { span++; }
             
             let ageStr = c.w.age ? (isNaN(c.w.age) ? ` (${c.w.age})` : ` (${c.w.age}J)`) : '';
-            let title = c.w.name + ageStr;
+            let title = c.w.name + ageStr + (c.w.image ? " 📸" : "");
             
-            // NEU: Kombinierte Fass & Finish Info generieren
             let cF = [];
             if(c.w.cask) cF.push(`Fass: ${c.w.cask}`);
             if(c.w.finish) cF.push(`Finish: ${c.w.finish}`);
             let caskInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic; font-weight:normal;">${cF.join('<br>')}</span>` : "";
             
             whiskyRow += `<th class="whisky-header">
-                <div onclick="openWhiskyModal(${c.idx})"><strong>${title}</strong>${caskInfo}<br><span style="font-size:11px; color:#aaa;">✏️</span></div>
+                <div onclick="openWhiskyModal(${c.idx})"><strong>${title}</strong>${caskInfo}<br><span style="font-size:11px; color:#aaa;">✏️ Bearbeiten</span></div>
                 <div onclick="removeWhisky(${c.idx})" style="margin-top:8px; color:#e74c3c; font-size:14px;">🗑️</div>
             </th>`;
         });
@@ -225,11 +254,22 @@ function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
 function openWhiskyModal(index) {
     editingWhiskyIndex = index;
+    
+    // Bild Input resetten
+    document.getElementById('w-image-input').value = "";
+    document.getElementById('w-image-preview').style.display = "none";
+    document.getElementById('w-image-hidden').value = "";
+    
     if(index !== null) {
         let w = currentTasting.whiskies[index];
         ['name', 'distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'flight'].forEach(key => {
             if(document.getElementById('w-'+key)) document.getElementById('w-'+key).value = w[key] || '';
         });
+        if(w.image) {
+            document.getElementById('w-image-preview').src = w.image;
+            document.getElementById('w-image-preview').style.display = "inline-block";
+            document.getElementById('w-image-hidden').value = w.image;
+        }
     } else {
         ['w-name', 'w-distillery', 'w-cask', 'w-finish', 'w-type', 'w-country', 'w-age', 'w-abv'].forEach(id => document.getElementById(id).value = '');
         let high = currentTasting.whiskies.length > 0 ? Math.max(...currentTasting.whiskies.map(w => parseInt(w.flight) || 1)) : 1;
@@ -238,9 +278,26 @@ function openWhiskyModal(index) {
     document.getElementById('modal-whisky').style.display = "block";
 }
 
-function saveWhiskyFromModal() {
+async function saveWhiskyFromModal() {
     let wName = document.getElementById('w-name').value;
     if(!wName) return alert("Name fehlt!");
+    
+    let btn = document.getElementById('btn-save-whisky');
+    let fileInput = document.getElementById('w-image-input');
+    
+    btn.innerText = "⏳ Lade Bild hoch...";
+    btn.disabled = true;
+    
+    let finalImageUrl = document.getElementById('w-image-hidden').value;
+
+    if(fileInput.files.length > 0) {
+        try {
+            finalImageUrl = await compressAndUploadImage(fileInput.files[0]);
+        } catch(e) {
+            alert("Bild-Upload fehlgeschlagen! Whisky wird ohne neues Bild gespeichert.");
+        }
+    }
+
     let wData = {
         name: wName, 
         distillery: document.getElementById('w-distillery').value,
@@ -250,15 +307,43 @@ function saveWhiskyFromModal() {
         country: document.getElementById('w-country').value,
         age: document.getElementById('w-age').value, 
         abv: document.getElementById('w-abv').value,
-        flight: document.getElementById('w-flight').value || 1
+        flight: document.getElementById('w-flight').value || 1,
+        image: finalImageUrl
     };
+    
     if(editingWhiskyIndex !== null) currentTasting.whiskies[editingWhiskyIndex] = wData;
-    else { 
-        currentTasting.whiskies.push(wData); 
-        saveToMasterDB(wData); 
-    }
+    else { currentTasting.whiskies.push(wData); saveToMasterDB(wData); }
+    
+    btn.innerText = "Speichern";
+    btn.disabled = false;
     closeModal('modal-whisky');
     renderGrid();
+}
+
+// NEU: Zeigt die schicke Detail-Karte
+function showDetailCard(encodedObj) {
+    let w = JSON.parse(decodeURIComponent(encodedObj));
+    
+    let ageStr = w.age ? (isNaN(w.age) ? w.age : `${w.age} Jahre`) : '-';
+    
+    document.getElementById('detail-name').innerText = w.name;
+    document.getElementById('detail-distillery').innerText = w.distillery || '';
+    document.getElementById('detail-type').innerText = w.type || '-';
+    document.getElementById('detail-country').innerText = w.country || '-';
+    document.getElementById('detail-age').innerText = ageStr;
+    document.getElementById('detail-abv').innerText = w.abv ? `${w.abv}%` : '-';
+    document.getElementById('detail-cask').innerText = w.cask || '-';
+    document.getElementById('detail-finish').innerText = w.finish || '-';
+    
+    let img = document.getElementById('detail-img');
+    if(w.image) {
+        img.src = w.image;
+        img.style.display = 'block';
+    } else {
+        img.style.display = 'none';
+    }
+    
+    document.getElementById('modal-whisky-details').style.display = 'block';
 }
 
 function openRatingModal(p, idx) {
@@ -276,8 +361,7 @@ function saveRatingFromModal() {
         nose: document.getElementById('r-nose').value, taste: document.getElementById('r-taste').value,
         finish: document.getElementById('r-finish').value, overall: document.getElementById('r-overall').value
     };
-    closeModal('modal-rating');
-    renderGrid();
+    closeModal('modal-rating'); renderGrid();
 }
 
 function saveTasting() {
@@ -318,13 +402,15 @@ function loadDashboard() {
         tastings.filter(t => t.date.startsWith(y)).forEach(t => {
             let winData = calculateWinnerForDashboard(t);
             
-            // Fass & Finish für Dashboard Kasten
             let cF = [];
             if(winData && winData.whisky && winData.whisky.cask) cF.push(`Fass: ${winData.whisky.cask}`);
             if(winData && winData.whisky && winData.whisky.finish) cF.push(`Finish: ${winData.whisky.finish}`);
             let caskDashInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
             
-            let winH = (winData && winData.whisky) ? `<div style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
+            let clickCard = (winData && winData.whisky) ? `onclick="showDetailCard('${encodeURIComponent(JSON.stringify(winData.whisky))}')" style="cursor:pointer;"` : "";
+            let imgIcon = (winData && winData.whisky && winData.whisky.image) ? ' 📸' : '';
+            
+            let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
             
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
             
@@ -347,11 +433,9 @@ function loadDashboard() {
 function resumeTasting(id) {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     currentTasting = JSON.parse(JSON.stringify(tastings.find(t => t.id === id))); 
-    
     document.getElementById('grid-edit-number').value = currentTasting.number || '';
     document.getElementById('grid-edit-name').value = currentTasting.name || '';
     document.getElementById('grid-edit-date').value = currentTasting.date || '';
-    
     renderGrid(); navigateTo('view-grid');
 }
 
@@ -372,7 +456,8 @@ function showTastingResults(id) {
             if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; }
         });
         let avg = count > 0 ? (tot/count).toFixed(2) : 0;
-        return { name: w.name, age: w.age, cask: w.cask, finish: w.finish, avg: parseFloat(avg) };
+        w.avg = parseFloat(avg);
+        return w;
     }).sort((a,b)=>b.avg - a.avg);
 
     res.forEach((r, i) => {
@@ -382,37 +467,25 @@ function showTastingResults(id) {
         if(r.cask) cF.push(`Fass: ${r.cask}`);
         if(r.finish) cF.push(`Finish: ${r.finish}`);
         let caskHtml = cF.length > 0 ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-top:-5px; margin-bottom:8px;">${cF.join('<br>')}</div>` : "";
-        
         let ageStr = r.age ? (isNaN(r.age) ? ` (${r.age})` : ` (${r.age}J)`) : '';
+        let imgIcon = r.image ? ' 📸' : '';
         
-        container.innerHTML += `<div class="result-card ${rankClass}">
+        container.innerHTML += `<div class="result-card ${rankClass}" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(r))}')">
             <div style="color:var(--secondary-text); font-size:14px;">${i+1}. Platz</div>
-            <h3>${r.name}${ageStr}</h3>
+            <h3>${r.name}${ageStr}${imgIcon}</h3>
             ${caskHtml}
             <div class="score-badge">Ø ${r.avg.toFixed(2)} Punkte</div>
         </div>`;
     });
-    
     navigateTo('view-results');
 }
 
-function finishAndShowResults() {
-    saveTasting();
-    showTastingResults(currentTasting.id);
-}
-
-function exitToDashboard() {
-    currentTasting = { id: null, number: '', name: '', date: '', participants: [], whiskies: [], ratings: {} };
-    loadDashboard(); navigateTo('view-dashboard');
-}
+function finishAndShowResults() { saveTasting(); showTastingResults(currentTasting.id); }
+function exitToDashboard() { currentTasting = { id: null, number: '', name: '', date: '', participants: [], whiskies: [], ratings: {} }; loadDashboard(); navigateTo('view-dashboard'); }
 
 function saveToMasterDB(w) {
     let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
-    if(!db.find(x => x.name === w.name)) { 
-        db.push(w); 
-        localStorage.setItem('whiskyDB', JSON.stringify(db)); 
-        syncToCloud(); 
-    }
+    if(!db.find(x => x.name === w.name)) { db.push(w); localStorage.setItem('whiskyDB', JSON.stringify(db)); syncToCloud(); }
 }
 
 function autoFillWhisky(i) {
@@ -422,6 +495,11 @@ function autoFillWhisky(i) {
         ['distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv'].forEach(k => {
             if(document.getElementById('w-'+k)) document.getElementById('w-'+k).value = w[k] || '';
         });
+        if(w.image) {
+            document.getElementById('w-image-preview').src = w.image;
+            document.getElementById('w-image-preview').style.display = "inline-block";
+            document.getElementById('w-image-hidden').value = w.image;
+        }
     }
 }
 
@@ -434,12 +512,12 @@ function updateDatalists() {
 
 function exportTastingToCSV(id) {
     let t = JSON.parse(localStorage.getItem('whiskyTastings')).find(x => x.id === id);
-    let csv = "\uFEFFFlight;Whisky;Fass;Finish;Durchschnitt\n";
+    let csv = "\uFEFFFlight;Whisky;Fass;Finish;Bild-Link;Durchschnitt\n";
     t.whiskies.forEach((w, i) => {
         let tot=0, c=0;
         t.participants.forEach(p => { let r=t.ratings[p]?.[i]; if(r&&r.overall){tot+=parseFloat(r.overall); c++;}});
         let avg = c>0 ? (tot/c).toFixed(2) : "0,00";
-        csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${avg.replace('.', ',')}\n`;
+        csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.image || ''};${avg.replace('.', ',')}\n`;
     });
     let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
     a.download = `DramScore_${t.name}.csv`; a.click();
@@ -448,8 +526,7 @@ function exportTastingToCSV(id) {
 function deleteSingleTasting(id) {
     if(confirm("Tasting wirklich löschen?")) {
         let t = JSON.parse(localStorage.getItem('whiskyTastings')).filter(x => x.id !== id);
-        localStorage.setItem('whiskyTastings', JSON.stringify(t)); 
-        syncToCloud(); loadDashboard();
+        localStorage.setItem('whiskyTastings', JSON.stringify(t)); syncToCloud(); loadDashboard();
     }
 }
 
@@ -475,7 +552,7 @@ function exportAllTastingsToCSV() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     if(tastings.length === 0) return alert("Keine Tastings vorhanden!");
     
-    let csv = "\uFEFFNr.;Tasting;Datum;Flight;Whisky;Fass;Finish;Destille;Art;Land;Alter;Alk. %;Durchschnitt\n";
+    let csv = "\uFEFFNr.;Tasting;Datum;Flight;Whisky;Fass;Finish;Destille;Art;Land;Alter;Alk. %;Bild-Link;Durchschnitt\n";
     
     tastings.forEach(t => {
         if(!t.whiskies) return;
@@ -489,7 +566,7 @@ function exportAllTastingsToCSV() {
             }
             let avg = c > 0 ? (tot/c).toFixed(2) : "0,00";
             let abv = (w.abv || '').toString().replace('.', ',');
-            csv += `${t.number || ''};${t.name};${t.date};${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${avg.replace('.', ',')}\n`;
+            csv += `${t.number || ''};${t.name};${t.date};${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${w.image || ''};${avg.replace('.', ',')}\n`;
         });
     });
     
@@ -504,15 +581,14 @@ function exportAllTastingsToCSV() {
 
 function loadStats() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    let globalWhiskys = {};
-    let allParticipants = new Set();
+    let globalWhiskys = {}; let allParticipants = new Set();
     
     tastings.forEach(t => {
         if(t.participants) t.participants.forEach(p => allParticipants.add(p));
         if(t.whiskies) {
             t.whiskies.forEach((w, i) => {
                 let key = w.name + (w.distillery ? `_${w.distillery}` : '');
-                if(!globalWhiskys[key]) globalWhiskys[key] = { name: w.name, dist: w.distillery, age: w.age, cask: w.cask, finish: w.finish, tot: 0, count: 0 };
+                if(!globalWhiskys[key]) globalWhiskys[key] = { ...w, tot: 0, count: 0 };
                 if(t.participants) {
                     t.participants.forEach(p => {
                         let r = t.ratings && t.ratings[p] ? t.ratings[p][i] : null;
@@ -526,39 +602,30 @@ function loadStats() {
         }
     });
     
-    let globalArr = Object.values(globalWhiskys).filter(w => w.count > 0).map(w => {
-        w.avg = w.tot / w.count;
-        return w;
-    });
-    
+    let globalArr = Object.values(globalWhiskys).filter(w => w.count > 0).map(w => { w.avg = w.tot / w.count; return w; });
     let globalTop10 = [...globalArr].sort((a,b) => b.avg - a.avg).slice(0, 10);
     let globalFlop10 = [...globalArr].sort((a,b) => a.avg - b.avg).slice(0, 10);
     
     let gHtml = '';
     globalTop10.forEach((w, idx) => {
         let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
-        
-        let cF = [];
-        if(w.cask) cF.push(`Fass: ${w.cask}`);
-        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let cF = []; if(w.cask) cF.push(`Fass: ${w.cask}`); if(w.finish) cF.push(`Finish: ${w.finish}`);
         let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
-        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        let imgIcon = w.image ? ' 📸' : '';
         
-        gHtml += `<div class="result-card" style="border-color: ${borderCol};"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
+        gHtml += `<div class="result-card" style="border-color: ${borderCol};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.distillery || '-'}</span></div><div class="score-badge" style="margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
     });
     document.getElementById('global-top-container').innerHTML = gHtml || "<p style='text-align:center;'>Noch keine Daten.</p>";
     
     let fHtml = '';
     globalFlop10.forEach((w, idx) => {
-        let cF = [];
-        if(w.cask) cF.push(`Fass: ${w.cask}`);
-        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let cF = []; if(w.cask) cF.push(`Fass: ${w.cask}`); if(w.finish) cF.push(`Finish: ${w.finish}`);
         let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
-        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        let imgIcon = w.image ? ' 📸' : '';
         
-        fHtml += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
+        fHtml += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.distillery || '-'}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
     });
     document.getElementById('global-flop-container').innerHTML = fHtml || "<p style='text-align:center;'>Noch keine Daten.</p>";
     
@@ -572,19 +639,17 @@ function showParticipantStats() {
     let container = document.getElementById('participant-stat-container');
     if(!pName) { container.innerHTML = ''; return; }
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    let myWhiskys = [];
-    let distStats = {};
+    let myWhiskys = []; let distStats = {};
     tastings.forEach(t => {
         if(!t.participants || !t.participants.includes(pName) || !t.whiskies) return;
         t.whiskies.forEach((w, i) => {
             let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null;
             if(r && r.overall && !isNaN(parseFloat(r.overall))) {
                 let score = parseFloat(r.overall);
-                myWhiskys.push({ name: w.name, dist: w.distillery, age: w.age, cask: w.cask, finish: w.finish, score: score, tasting: t.name });
+                myWhiskys.push({ ...w, score: score, tasting: t.name });
                 if(w.distillery) {
                     if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 };
-                    distStats[w.distillery].tot += score;
-                    distStats[w.distillery].count++;
+                    distStats[w.distillery].tot += score; distStats[w.distillery].count++;
                 }
             }
         });
@@ -602,27 +667,22 @@ function showParticipantStats() {
     html += `<h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
     top10.forEach((w, idx) => {
         let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
-        
-        let cF = [];
-        if(w.cask) cF.push(`Fass: ${w.cask}`);
-        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let cF = []; if(w.cask) cF.push(`Fass: ${w.cask}`); if(w.finish) cF.push(`Finish: ${w.finish}`);
         let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
-        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        let imgIcon = w.image ? ' 📸' : '';
         
-        html += `<div class="result-card" style="border-color: ${borderCol};"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
+        html += `<div class="result-card" style="border-color: ${borderCol};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
     });
     
     html += `<h3 style="color:#e74c3c; text-align:center; margin-top:20px;">☠️ Flop 10</h3>`;
     bottom10.forEach((w, idx) => {
-        let cF = [];
-        if(w.cask) cF.push(`Fass: ${w.cask}`);
-        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let cF = []; if(w.cask) cF.push(`Fass: ${w.cask}`); if(w.finish) cF.push(`Finish: ${w.finish}`);
         let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
-        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        let imgIcon = w.image ? ' 📸' : '';
         
-        html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
+        html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
     });
     container.innerHTML = html;
 }
