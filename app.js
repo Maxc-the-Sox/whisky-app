@@ -661,6 +661,9 @@ function resumeTasting(id) {
 }
 
 function showTastingResults(id) {
+    // Wenn das Modal noch offen ist, schließen wir es, um direkt zur Auswertung zu springen
+    closeModal('modal-whisky-details'); 
+    
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     currentTasting = JSON.parse(JSON.stringify(tastings.find(t => t.id === id))); 
     
@@ -879,7 +882,8 @@ function showParticipantStats() {
             let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null;
             if(r && r.overall && !isNaN(parseFloat(r.overall))) {
                 let score = parseFloat(r.overall);
-                myWhiskys.push({ ...w, score: score, tasting: t.name });
+                // NEU: ID des Tastings mit übergeben
+                myWhiskys.push({ ...w, score: score, tasting: t.name, tastingId: t.id });
                 if(w.distillery) {
                     if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 };
                     distStats[w.distillery].tot += score; distStats[w.distillery].count++;
@@ -905,7 +909,10 @@ function showParticipantStats() {
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         let imgIcon = w.image ? ' 📸' : '';
         
-        html += `<div class="result-card" style="border-color: ${borderCol};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
+        // Klickbarer Tasting Link
+        let tastingLink = `<span style="color:#3498db; cursor:pointer; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span>`;
+        
+        html += `<div class="result-card" style="border-color: ${borderCol};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${tastingLink}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
     });
     
     html += `<h3 style="color:#e74c3c; text-align:center; margin-top:20px;">☠️ Flop 10</h3>`;
@@ -915,7 +922,10 @@ function showParticipantStats() {
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         let imgIcon = w.image ? ' 📸' : '';
         
-        html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
+        // Klickbarer Tasting Link
+        let tastingLink = `<span style="color:#3498db; cursor:pointer; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span>`;
+        
+        html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${tastingLink}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
     });
     container.innerHTML = html;
 }
@@ -930,13 +940,18 @@ function loadCabinet() {
                 let key = w.name + '|' + (w.distillery || '') + '|' + (w.age || '') + '|' + (w.cask || '') + '|' + (w.finish || '');
 
                 if(!cabinetWhiskys[key]) {
-                    cabinetWhiskys[key] = { ...w, tot: 0, count: 0, inTastings: new Set(), comments: w.comments || [] };
+                    // NEU: tastingsRef speichert die ID mit, damit wir sie später verlinken können
+                    cabinetWhiskys[key] = { ...w, tot: 0, count: 0, tastingsRef: [], comments: w.comments || [] };
                 } else if (w.comments && w.comments.length > 0) {
                     cabinetWhiskys[key].comments = w.comments;
                 }
 
                 let tLabel = t.number ? `#${t.number} ${t.name}` : t.name;
-                cabinetWhiskys[key].inTastings.add(tLabel);
+                
+                // Prüfen ob wir dieses Tasting schon hinzugefügt haben (damit es nicht doppelt auftaucht)
+                if(!cabinetWhiskys[key].tastingsRef.find(tr => tr.id === t.id)) {
+                    cabinetWhiskys[key].tastingsRef.push({ id: t.id, label: tLabel });
+                }
 
                 if(t.participants) {
                     t.participants.forEach(p => {
@@ -968,7 +983,8 @@ function loadCabinet() {
         let caskStr = w.cask || '-';
         let finishStr = w.finish || '-';
 
-        let tastingsStr = Array.from(w.inTastings).join(', ');
+        // NEU: Aus den Tasting-Infos klickbare blaue Links bauen
+        let tastingsStr = w.tastingsRef.map(tr => `<span style="color: #3498db; cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); showTastingResults('${tr.id}')">${tr.label}</span>`).join(', ');
 
         html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')">
             <div style="display: flex; gap: 15px;">
