@@ -180,10 +180,14 @@ function renderGrid() {
                 currentFlight = c.f; span = 1;
             } else { span++; }
             
-            // ÄNDERUNG: Hier wird geprüft, ob es NA/NAS ist oder eine Zahl
             let ageStr = c.w.age ? (isNaN(c.w.age) ? ` (${c.w.age})` : ` (${c.w.age}J)`) : '';
             let title = c.w.name + ageStr;
-            let caskInfo = c.w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic; font-weight:normal;">${c.w.cask}</span>` : "";
+            
+            // NEU: Kombinierte Fass & Finish Info generieren
+            let cF = [];
+            if(c.w.cask) cF.push(`Fass: ${c.w.cask}`);
+            if(c.w.finish) cF.push(`Finish: ${c.w.finish}`);
+            let caskInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic; font-weight:normal;">${cF.join('<br>')}</span>` : "";
             
             whiskyRow += `<th class="whisky-header">
                 <div onclick="openWhiskyModal(${c.idx})"><strong>${title}</strong>${caskInfo}<br><span style="font-size:11px; color:#aaa;">✏️</span></div>
@@ -223,11 +227,11 @@ function openWhiskyModal(index) {
     editingWhiskyIndex = index;
     if(index !== null) {
         let w = currentTasting.whiskies[index];
-        ['name', 'distillery', 'cask', 'type', 'country', 'age', 'abv', 'flight'].forEach(key => {
+        ['name', 'distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'flight'].forEach(key => {
             if(document.getElementById('w-'+key)) document.getElementById('w-'+key).value = w[key] || '';
         });
     } else {
-        ['w-name', 'w-distillery', 'w-cask', 'w-type', 'w-country', 'w-age', 'w-abv'].forEach(id => document.getElementById(id).value = '');
+        ['w-name', 'w-distillery', 'w-cask', 'w-finish', 'w-type', 'w-country', 'w-age', 'w-abv'].forEach(id => document.getElementById(id).value = '');
         let high = currentTasting.whiskies.length > 0 ? Math.max(...currentTasting.whiskies.map(w => parseInt(w.flight) || 1)) : 1;
         document.getElementById('w-flight').value = high;
     }
@@ -241,6 +245,7 @@ function saveWhiskyFromModal() {
         name: wName, 
         distillery: document.getElementById('w-distillery').value,
         cask: document.getElementById('w-cask').value,
+        finish: document.getElementById('w-finish').value,
         type: document.getElementById('w-type').value, 
         country: document.getElementById('w-country').value,
         age: document.getElementById('w-age').value, 
@@ -313,7 +318,12 @@ function loadDashboard() {
         tastings.filter(t => t.date.startsWith(y)).forEach(t => {
             let winData = calculateWinnerForDashboard(t);
             
-            let caskDashInfo = (winData && winData.whisky && winData.whisky.cask) ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${winData.whisky.cask}</span>` : "";
+            // Fass & Finish für Dashboard Kasten
+            let cF = [];
+            if(winData && winData.whisky && winData.whisky.cask) cF.push(`Fass: ${winData.whisky.cask}`);
+            if(winData && winData.whisky && winData.whisky.finish) cF.push(`Finish: ${winData.whisky.finish}`);
+            let caskDashInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
+            
             let winH = (winData && winData.whisky) ? `<div style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
             
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
@@ -362,14 +372,17 @@ function showTastingResults(id) {
             if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; }
         });
         let avg = count > 0 ? (tot/count).toFixed(2) : 0;
-        return { name: w.name, age: w.age, cask: w.cask, avg: parseFloat(avg) };
+        return { name: w.name, age: w.age, cask: w.cask, finish: w.finish, avg: parseFloat(avg) };
     }).sort((a,b)=>b.avg - a.avg);
 
     res.forEach((r, i) => {
         let rankClass = (i === 0 && r.avg > 0) ? "winner" : (i === res.length-1 && res.length > 1) ? "loser" : "";
-        let caskHtml = r.cask ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-top:-5px; margin-bottom:8px;">${r.cask}</div>` : '';
         
-        // ÄNDERUNG: NA Logik in den Resultaten
+        let cF = [];
+        if(r.cask) cF.push(`Fass: ${r.cask}`);
+        if(r.finish) cF.push(`Finish: ${r.finish}`);
+        let caskHtml = cF.length > 0 ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-top:-5px; margin-bottom:8px;">${cF.join('<br>')}</div>` : "";
+        
         let ageStr = r.age ? (isNaN(r.age) ? ` (${r.age})` : ` (${r.age}J)`) : '';
         
         container.innerHTML += `<div class="result-card ${rankClass}">
@@ -406,7 +419,7 @@ function autoFillWhisky(i) {
     let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
     let w = db.find(x => x.name === i.value);
     if(w) {
-        ['distillery', 'cask', 'type', 'country', 'age', 'abv'].forEach(k => {
+        ['distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv'].forEach(k => {
             if(document.getElementById('w-'+k)) document.getElementById('w-'+k).value = w[k] || '';
         });
     }
@@ -421,12 +434,12 @@ function updateDatalists() {
 
 function exportTastingToCSV(id) {
     let t = JSON.parse(localStorage.getItem('whiskyTastings')).find(x => x.id === id);
-    let csv = "\uFEFFFlight;Whisky;Fass;Durchschnitt\n";
+    let csv = "\uFEFFFlight;Whisky;Fass;Finish;Durchschnitt\n";
     t.whiskies.forEach((w, i) => {
         let tot=0, c=0;
         t.participants.forEach(p => { let r=t.ratings[p]?.[i]; if(r&&r.overall){tot+=parseFloat(r.overall); c++;}});
         let avg = c>0 ? (tot/c).toFixed(2) : "0,00";
-        csv += `${w.flight || 1};${w.name};${w.cask || ''};${avg.replace('.', ',')}\n`;
+        csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${avg.replace('.', ',')}\n`;
     });
     let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
     a.download = `DramScore_${t.name}.csv`; a.click();
@@ -462,7 +475,7 @@ function exportAllTastingsToCSV() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     if(tastings.length === 0) return alert("Keine Tastings vorhanden!");
     
-    let csv = "\uFEFFNr.;Tasting;Datum;Flight;Whisky;Fass;Destille;Art;Land;Alter;Alk. %;Durchschnitt\n";
+    let csv = "\uFEFFNr.;Tasting;Datum;Flight;Whisky;Fass;Finish;Destille;Art;Land;Alter;Alk. %;Durchschnitt\n";
     
     tastings.forEach(t => {
         if(!t.whiskies) return;
@@ -476,7 +489,7 @@ function exportAllTastingsToCSV() {
             }
             let avg = c > 0 ? (tot/c).toFixed(2) : "0,00";
             let abv = (w.abv || '').toString().replace('.', ',');
-            csv += `${t.number || ''};${t.name};${t.date};${w.flight || 1};${w.name};${w.cask || ''};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${avg.replace('.', ',')}\n`;
+            csv += `${t.number || ''};${t.name};${t.date};${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${avg.replace('.', ',')}\n`;
         });
     });
     
@@ -499,7 +512,7 @@ function loadStats() {
         if(t.whiskies) {
             t.whiskies.forEach((w, i) => {
                 let key = w.name + (w.distillery ? `_${w.distillery}` : '');
-                if(!globalWhiskys[key]) globalWhiskys[key] = { name: w.name, dist: w.distillery, age: w.age, cask: w.cask, tot: 0, count: 0 };
+                if(!globalWhiskys[key]) globalWhiskys[key] = { name: w.name, dist: w.distillery, age: w.age, cask: w.cask, finish: w.finish, tot: 0, count: 0 };
                 if(t.participants) {
                     t.participants.forEach(p => {
                         let r = t.ratings && t.ratings[p] ? t.ratings[p][i] : null;
@@ -524,8 +537,12 @@ function loadStats() {
     let gHtml = '';
     globalTop10.forEach((w, idx) => {
         let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
-        let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        // ÄNDERUNG: NA Logik in Top 10
+        
+        let cF = [];
+        if(w.cask) cF.push(`Fass: ${w.cask}`);
+        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
+        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         
         gHtml += `<div class="result-card" style="border-color: ${borderCol};"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
@@ -534,8 +551,11 @@ function loadStats() {
     
     let fHtml = '';
     globalFlop10.forEach((w, idx) => {
-        let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        // ÄNDERUNG: NA Logik in Flop 10
+        let cF = [];
+        if(w.cask) cF.push(`Fass: ${w.cask}`);
+        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
+        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         
         fHtml += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:12px; color:#ccc;">${w.dist || '-'}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">Ø ${w.avg.toFixed(2)}</div></div></div>`;
@@ -560,7 +580,7 @@ function showParticipantStats() {
             let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null;
             if(r && r.overall && !isNaN(parseFloat(r.overall))) {
                 let score = parseFloat(r.overall);
-                myWhiskys.push({ name: w.name, dist: w.distillery, age: w.age, cask: w.cask, score: score, tasting: t.name });
+                myWhiskys.push({ name: w.name, dist: w.distillery, age: w.age, cask: w.cask, finish: w.finish, score: score, tasting: t.name });
                 if(w.distillery) {
                     if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 };
                     distStats[w.distillery].tot += score;
@@ -582,8 +602,12 @@ function showParticipantStats() {
     html += `<h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
     top10.forEach((w, idx) => {
         let borderCol = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444'));
-        let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        // ÄNDERUNG: NA Logik in persönlicher Top 10
+        
+        let cF = [];
+        if(w.cask) cF.push(`Fass: ${w.cask}`);
+        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
+        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         
         html += `<div class="result-card" style="border-color: ${borderCol};"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
@@ -591,8 +615,11 @@ function showParticipantStats() {
     
     html += `<h3 style="color:#e74c3c; text-align:center; margin-top:20px;">☠️ Flop 10</h3>`;
     bottom10.forEach((w, idx) => {
-        let caskHtml = w.cask ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${w.cask}</span>` : '';
-        // ÄNDERUNG: NA Logik in persönlicher Flop 10
+        let cF = [];
+        if(w.cask) cF.push(`Fass: ${w.cask}`);
+        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let caskHtml = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
+        
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         
         html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${w.tasting}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;

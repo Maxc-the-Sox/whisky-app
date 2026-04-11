@@ -177,6 +177,21 @@
                 <option value="Madeira"></option>
             </datalist>
 
+            <datalist id="whisky-finishes">
+                <option value="Sherry Oloroso"></option>
+                <option value="Pedro Ximénez (PX)"></option>
+                <option value="Ruby Port"></option>
+                <option value="Tawny Port"></option>
+                <option value="Amarone"></option>
+                <option value="Rioja"></option>
+                <option value="Fetească Neagră"></option>
+                <option value="Sauternes"></option>
+                <option value="Madeira"></option>
+                <option value="Rum Cask"></option>
+                <option value="Stout Cask"></option>
+                <option value="Virgin Oak"></option>
+            </datalist>
+
             <datalist id="countries">
                 <option value="Schottland"></option>
                 <option value="Irland"></option>
@@ -196,8 +211,16 @@
             <label>Name</label><input type="text" id="w-name" list="known-whiskies" onchange="autoFillWhisky(this)">
             <label>Destille</label><input type="text" id="w-distillery" list="known-distilleries">
             
-            <label>Fass / Reifung</label>
-            <input type="text" id="w-cask" list="whisky-casks" placeholder="z.B. Ruby Port Finish">
+            <div style="display: flex; gap: 10px;">
+                <div style="flex:1">
+                    <label>Fass</label>
+                    <input type="text" id="w-cask" list="whisky-casks" placeholder="z.B. Ex-Bourbon">
+                </div>
+                <div style="flex:1">
+                    <label>Finish</label>
+                    <input type="text" id="w-finish" list="whisky-finishes" placeholder="z.B. Rioja">
+                </div>
+            </div>
 
             <div style="display: flex; gap: 10px;">
                 <div style="flex:1"><label>Art</label><input type="text" id="w-type" list="whisky-types"></div>
@@ -247,6 +270,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase16"></script>
+    <script src="app.js?v=firebase17"></script>
 </body>
 </html>
