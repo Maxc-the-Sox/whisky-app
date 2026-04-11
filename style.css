@@ -57,25 +57,41 @@ td:first-child:active { background-color: #333; }
 .inline-input { width: 60px; padding: 8px; margin: 0; text-align: center; font-weight: bold; font-size: 16px; background: #111; border: 1px solid #555; color: white;}
 .edit-icon { cursor: pointer; font-size: 18px; margin-left: 5px; }
 
+/* MODAL DESIGN UPDATE FÜR IPHONE */
 .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
-.modal-content { background-color: var(--bg-color); margin: 10% auto; padding: 20px; border: 1px solid var(--accent-color); border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; }
 
-/* NEU: Sticky Footer für die Buttons in Pop-ups */
+.modal-content { 
+    background-color: var(--bg-color); 
+    margin: 5% auto; /* Extra weit oben platziert für iPhone Tastatur */
+    border: 1px solid var(--accent-color); 
+    border-radius: 12px; 
+    width: 90%; 
+    max-width: 400px; 
+    max-height: 85vh; /* Verhindert, dass das Fenster aus dem Bildschirm ragt */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
+    display: flex; /* Teilt das Fenster in saubere Blöcke auf */
+    flex-direction: column;
+    overflow: hidden; 
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto; /* Nur DIESER Teil scrollt */
+    flex: 1; /* Nimmt den restlichen Platz ein */
+    -webkit-overflow-scrolling: touch; /* Weiches Scrollen am iPhone */
+}
+
 .modal-footer {
-    position: sticky;
-    bottom: -20px;
-    background: var(--bg-color);
-    padding: 15px 20px 20px 20px;
-    margin: 20px -20px -20px -20px;
+    padding: 15px 20px;
+    background: #111;
     border-top: 1px solid #444;
     display: flex;
     gap: 10px;
-    z-index: 100;
-    border-bottom-left-radius: 12px;
-    border-bottom-right-radius: 12px;
+    /* Dieser Teil bleibt immer starr unten stehen! */
 }
 .modal-footer button { margin: 0 !important; }
 
+/* RESULT CARDS & BILDER */
 .result-card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #444; text-align: center; cursor: pointer; transition: transform 0.1s;}
 .result-card:active { transform: scale(0.98); }
 .result-card h3 { margin: 5px 0; color: white;}

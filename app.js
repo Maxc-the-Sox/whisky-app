@@ -64,7 +64,7 @@ async function compressAndUploadImage(file) {
             img.src = event.target.result;
             img.onload = () => {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 1200; // Genug für knackscharfe Etiketten
+                const MAX_WIDTH = 1200; 
                 const MAX_HEIGHT = 1200;
                 let width = img.width;
                 let height = img.height;
@@ -78,7 +78,6 @@ async function compressAndUploadImage(file) {
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Auf 85% Qualität komprimieren (~300kb)
                 const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
                 
                 const formData = new FormData();
@@ -110,7 +109,6 @@ function navigateTo(viewId) {
     window.scrollTo(0, 0);
 }
 
-// --- SETUP & TEILNEHMER ---
 function addParticipant() {
     const input = document.getElementById('setup-participant-name');
     const name = input.value.trim();
@@ -172,7 +170,6 @@ function updateParticipantDatalist() {
     pDB.forEach(p => list.innerHTML += `<option value="${p}"></option>`);
 }
 
-// --- LIVE GRID ---
 function startTastingGrid() {
     currentTasting.number = document.getElementById('setup-number').value || '';
     currentTasting.name = document.getElementById('setup-name').value || 'Unbenanntes Tasting';
@@ -234,8 +231,10 @@ function renderGrid() {
         cols.forEach(c => {
             let r = currentTasting.ratings[pName]?.[c.idx];
             let val = r && r.overall ? r.overall : '';
+            // NEU: Wenn übersprungen, 🙈 anzeigen, sonst den Wert. type="text" erlaubt Emoji-Eingabe.
+            let displayVal = val === 'skip' ? '🙈' : val;
             html += `<td><div style="display:flex; align-items:center; justify-content:center;">
-                <input type="number" step="0.1" class="inline-input" placeholder="-" value="${val}" onchange="updateInlineRating('${pName}', ${c.idx}, this.value)">
+                <input type="text" inputmode="decimal" class="inline-input" placeholder="-" value="${displayVal}" onchange="updateInlineRating('${pName}', ${c.idx}, this.value)">
                 <span class="edit-icon" onclick="openRatingModal('${pName}', ${c.idx})">📝</span>
             </div></td>`;
         });
@@ -247,6 +246,8 @@ function renderGrid() {
 function updateInlineRating(p, idx, val) {
     if(!currentTasting.ratings[p]) currentTasting.ratings[p] = {};
     if(!currentTasting.ratings[p][idx]) currentTasting.ratings[p][idx] = { nose: '', taste: '', finish: '', overall: '' };
+    // Wenn jemand ein 🙈 eintippt oder es drin steht, bleibt es bei 'skip'.
+    if (val === '🙈') val = 'skip';
     currentTasting.ratings[p][idx].overall = val;
 }
 
@@ -254,8 +255,6 @@ function closeModal(id) { document.getElementById(id).style.display = "none"; }
 
 function openWhiskyModal(index) {
     editingWhiskyIndex = index;
-    
-    // Bild Input resetten
     document.getElementById('w-image-input').value = "";
     document.getElementById('w-image-preview').style.display = "none";
     document.getElementById('w-image-hidden').value = "";
@@ -320,10 +319,8 @@ async function saveWhiskyFromModal() {
     renderGrid();
 }
 
-// NEU: Zeigt die schicke Detail-Karte
 function showDetailCard(encodedObj) {
     let w = JSON.parse(decodeURIComponent(encodedObj));
-    
     let ageStr = w.age ? (isNaN(w.age) ? w.age : `${w.age} Jahre`) : '-';
     
     document.getElementById('detail-name').innerText = w.name;
@@ -350,7 +347,14 @@ function openRatingModal(p, idx) {
     currentRatingContext = { participant: p, whiskyIndex: idx };
     let r = currentTasting.ratings[p]?.[idx] || { nose: '', taste: '', finish: '', overall: '' };
     document.getElementById('modal-rating-subtitle').innerText = `${p} bewertet: ${currentTasting.whiskies[idx].name}`;
-    ['nose', 'taste', 'finish', 'overall'].forEach(key => document.getElementById('r-'+key).value = r[key]);
+    
+    // Wenn 'skip' gesetzt ist, zeigen wir leere Felder an
+    ['nose', 'taste', 'finish', 'overall'].forEach(key => {
+        let val = r[key];
+        if (val === 'skip') val = ''; 
+        document.getElementById('r-'+key).value = val;
+    });
+    
     document.getElementById('modal-rating').style.display = "block";
 }
 
@@ -361,6 +365,14 @@ function saveRatingFromModal() {
         nose: document.getElementById('r-nose').value, taste: document.getElementById('r-taste').value,
         finish: document.getElementById('r-finish').value, overall: document.getElementById('r-overall').value
     };
+    closeModal('modal-rating'); renderGrid();
+}
+
+// NEU: Setzt die Wertung auf "skip" (Ausgesetzt)
+function skipRatingFromModal() {
+    let p = currentRatingContext.participant; let idx = currentRatingContext.whiskyIndex;
+    if(!currentTasting.ratings[p]) currentTasting.ratings[p] = {};
+    currentTasting.ratings[p][idx] = { nose: '', taste: '', finish: '', overall: 'skip' };
     closeModal('modal-rating'); renderGrid();
 }
 
@@ -380,6 +392,7 @@ function calculateWinnerForDashboard(t) {
         if(t.participants) {
             t.participants.forEach(p => {
                 let r = t.ratings[p]?.[i];
+                // !isNaN ignoriert 'skip' und leere Werte automatisch!
                 if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; }
             });
         }
@@ -515,7 +528,11 @@ function exportTastingToCSV(id) {
     let csv = "\uFEFFFlight;Whisky;Fass;Finish;Bild-Link;Durchschnitt\n";
     t.whiskies.forEach((w, i) => {
         let tot=0, c=0;
-        t.participants.forEach(p => { let r=t.ratings[p]?.[i]; if(r&&r.overall){tot+=parseFloat(r.overall); c++;}});
+        t.participants.forEach(p => { 
+            let r=t.ratings[p]?.[i]; 
+            // Fix für sauberen CSV Export bei 'skip'
+            if(r && r.overall && !isNaN(parseFloat(r.overall))){tot+=parseFloat(r.overall); c++;}
+        });
         let avg = c>0 ? (tot/c).toFixed(2) : "0,00";
         csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.image || ''};${avg.replace('.', ',')}\n`;
     });
