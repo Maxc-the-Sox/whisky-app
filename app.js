@@ -95,11 +95,50 @@ async function compressAndUploadImage(file) {
     });
 }
 
+// NEU: Funktion für das Tasting-Gruppenfoto
+async function uploadGroupPhoto(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+    
+    let btn = document.getElementById('btn-group-photo');
+    let status = document.getElementById('group-photo-status');
+    
+    let oldText = btn.innerText;
+    btn.innerText = "⏳ Lade Foto hoch...";
+    btn.disabled = true;
+    status.style.display = "none";
+    
+    try {
+        let url = await compressAndUploadImage(file);
+        currentTasting.image = url; // Speichert den Link für das gesamte Tasting
+        saveTasting(); // Speichert direkt, damit es sicher ist
+        btn.innerText = "📸 Foto ändern";
+        status.style.display = "block";
+    } catch(e) {
+        alert("Upload fehlgeschlagen! Bitte überprüfe deine Internetverbindung.");
+        btn.innerText = oldText;
+    }
+    btn.disabled = false;
+}
+
+function updateGroupPhotoUI() {
+    let btn = document.getElementById('btn-group-photo');
+    let status = document.getElementById('group-photo-status');
+    if (currentTasting.image) {
+        btn.innerText = "📸 Foto ändern";
+        status.style.display = "block";
+    } else {
+        btn.innerText = "📸 Gruppenfoto hinzufügen";
+        status.style.display = "none";
+    }
+}
+
 // ==========================================
 // APP LOGIK
 // ==========================================
 
-let currentTasting = { id: null, number: '', name: '', date: '', participants: [], whiskies: [], ratings: {} };
+// NEU: currentTasting hat jetzt die Variable 'image'
+let currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {} };
 let editingWhiskyIndex = null;
 let currentRatingContext = { participant: null, whiskyIndex: null };
 
@@ -182,6 +221,7 @@ function startTastingGrid() {
     document.getElementById('grid-edit-name').value = currentTasting.name;
     document.getElementById('grid-edit-date').value = currentTasting.date;
     
+    updateGroupPhotoUI();
     updateDatalists(); renderGrid(); navigateTo('view-grid');
 }
 
@@ -231,7 +271,6 @@ function renderGrid() {
         cols.forEach(c => {
             let r = currentTasting.ratings[pName]?.[c.idx];
             let val = r && r.overall ? r.overall : '';
-            // NEU: Wenn übersprungen, 🙈 anzeigen, sonst den Wert. type="text" erlaubt Emoji-Eingabe.
             let displayVal = val === 'skip' ? '🙈' : val;
             html += `<td><div style="display:flex; align-items:center; justify-content:center;">
                 <input type="text" inputmode="decimal" class="inline-input" placeholder="-" value="${displayVal}" onchange="updateInlineRating('${pName}', ${c.idx}, this.value)">
@@ -246,7 +285,6 @@ function renderGrid() {
 function updateInlineRating(p, idx, val) {
     if(!currentTasting.ratings[p]) currentTasting.ratings[p] = {};
     if(!currentTasting.ratings[p][idx]) currentTasting.ratings[p][idx] = { nose: '', taste: '', finish: '', overall: '' };
-    // Wenn jemand ein 🙈 eintippt oder es drin steht, bleibt es bei 'skip'.
     if (val === '🙈') val = 'skip';
     currentTasting.ratings[p][idx].overall = val;
 }
@@ -348,7 +386,6 @@ function openRatingModal(p, idx) {
     let r = currentTasting.ratings[p]?.[idx] || { nose: '', taste: '', finish: '', overall: '' };
     document.getElementById('modal-rating-subtitle').innerText = `${p} bewertet: ${currentTasting.whiskies[idx].name}`;
     
-    // Wenn 'skip' gesetzt ist, zeigen wir leere Felder an
     ['nose', 'taste', 'finish', 'overall'].forEach(key => {
         let val = r[key];
         if (val === 'skip') val = ''; 
@@ -368,7 +405,6 @@ function saveRatingFromModal() {
     closeModal('modal-rating'); renderGrid();
 }
 
-// NEU: Setzt die Wertung auf "skip" (Ausgesetzt)
 function skipRatingFromModal() {
     let p = currentRatingContext.participant; let idx = currentRatingContext.whiskyIndex;
     if(!currentTasting.ratings[p]) currentTasting.ratings[p] = {};
@@ -392,7 +428,6 @@ function calculateWinnerForDashboard(t) {
         if(t.participants) {
             t.participants.forEach(p => {
                 let r = t.ratings[p]?.[i];
-                // !isNaN ignoriert 'skip' und leere Werte automatisch!
                 if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; }
             });
         }
@@ -426,9 +461,11 @@ function loadDashboard() {
             let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
             
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
+            // NEU: Gruppenfoto Symbol in der Überschrift, falls vorhanden
+            let groupImgIcon = t.image ? ' <span style="font-size:16px;">📸</span>' : '';
             
             html += `<li class="tasting-item">
-                <strong>${numDisplay}${t.name}</strong> <br>
+                <strong>${numDisplay}${t.name}${groupImgIcon}</strong> <br>
                 <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${t.participants.length} | 🥃 ${t.whiskies.length}</span>
                 ${winH}
                 <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
@@ -449,6 +486,7 @@ function resumeTasting(id) {
     document.getElementById('grid-edit-number').value = currentTasting.number || '';
     document.getElementById('grid-edit-name').value = currentTasting.name || '';
     document.getElementById('grid-edit-date').value = currentTasting.date || '';
+    updateGroupPhotoUI();
     renderGrid(); navigateTo('view-grid');
 }
 
@@ -461,6 +499,15 @@ function showTastingResults(id) {
     
     let numDisplay = currentTasting.number ? `#${currentTasting.number} ` : "";
     document.getElementById('results-title').innerText = numDisplay + currentTasting.name;
+
+    // NEU: Gruppenfoto anzeigen
+    let groupPhoto = document.getElementById('results-group-photo');
+    if (currentTasting.image) {
+        groupPhoto.src = currentTasting.image;
+        groupPhoto.style.display = "block";
+    } else {
+        groupPhoto.style.display = "none";
+    }
 
     let res = currentTasting.whiskies.map((w, index) => {
         let tot = 0, count = 0;
@@ -494,7 +541,9 @@ function showTastingResults(id) {
 }
 
 function finishAndShowResults() { saveTasting(); showTastingResults(currentTasting.id); }
-function exitToDashboard() { currentTasting = { id: null, number: '', name: '', date: '', participants: [], whiskies: [], ratings: {} }; loadDashboard(); navigateTo('view-dashboard'); }
+
+// NEU: currentTasting Reset schließt jetzt das image mit ein
+function exitToDashboard() { currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {} }; loadDashboard(); navigateTo('view-dashboard'); }
 
 function saveToMasterDB(w) {
     let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
@@ -530,7 +579,6 @@ function exportTastingToCSV(id) {
         let tot=0, c=0;
         t.participants.forEach(p => { 
             let r=t.ratings[p]?.[i]; 
-            // Fix für sauberen CSV Export bei 'skip'
             if(r && r.overall && !isNaN(parseFloat(r.overall))){tot+=parseFloat(r.overall); c++;}
         });
         let avg = c>0 ? (tot/c).toFixed(2) : "0,00";
@@ -569,7 +617,8 @@ function exportAllTastingsToCSV() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     if(tastings.length === 0) return alert("Keine Tastings vorhanden!");
     
-    let csv = "\uFEFFNr.;Tasting;Datum;Flight;Whisky;Fass;Finish;Destille;Art;Land;Alter;Alk. %;Bild-Link;Durchschnitt\n";
+    // Spalte für Tasting-Gruppenfoto ergänzt
+    let csv = "\uFEFFNr.;Tasting;Datum;Tasting-Bild;Flight;Whisky;Fass;Finish;Destille;Art;Land;Alter;Alk. %;Whisky-Bild;Durchschnitt\n";
     
     tastings.forEach(t => {
         if(!t.whiskies) return;
@@ -583,7 +632,7 @@ function exportAllTastingsToCSV() {
             }
             let avg = c > 0 ? (tot/c).toFixed(2) : "0,00";
             let abv = (w.abv || '').toString().replace('.', ',');
-            csv += `${t.number || ''};${t.name};${t.date};${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${w.image || ''};${avg.replace('.', ',')}\n`;
+            csv += `${t.number || ''};${t.name};${t.date};${t.image || ''};${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.distillery || ''};${w.type || ''};${w.country || ''};${w.age || ''};${abv};${w.image || ''};${avg.replace('.', ',')}\n`;
         });
     });
     
@@ -604,7 +653,7 @@ function loadStats() {
         if(t.participants) t.participants.forEach(p => allParticipants.add(p));
         if(t.whiskies) {
             t.whiskies.forEach((w, i) => {
-                let key = w.name + (w.distillery ? `_${w.distillery}` : '');
+                let key = w.name + '|' + (w.distillery || '') + '|' + (w.age || '') + '|' + (w.cask || '') + '|' + (w.finish || '');
                 if(!globalWhiskys[key]) globalWhiskys[key] = { ...w, tot: 0, count: 0 };
                 if(t.participants) {
                     t.participants.forEach(p => {
