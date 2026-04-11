@@ -166,7 +166,7 @@
 
     <div id="modal-whisky" class="modal">
         <div class="modal-content">
-            <h2 id="modal-whisky-title">Whisky eintragen</h2>
+            <h2 id="modal-whisky-title" style="margin-top: 0;">Whisky eintragen</h2>
             <datalist id="known-whiskies"></datalist>
             <datalist id="known-distilleries"></datalist>
             <datalist id="whisky-types">
@@ -226,12 +226,15 @@
                 <option value="Österreich"></option>
             </datalist>
 
-            <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px;">
-                <label style="margin-top: 0; text-align: center;">Flaschen-Foto (Optional)</label>
-                <input type="file" id="w-image-input" accept="image/*" style="display: none;" onchange="previewImage(event)">
-                <button class="btn-secondary" style="margin-top: 10px; border-color: #3498db; color: #3498db; padding: 10px;" onclick="document.getElementById('w-image-input').click()">📷 Foto machen / wählen</button>
-                <div class="img-preview-container">
-                    <img id="w-image-preview" src="">
+            <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
+                <div style="flex: 1;">
+                    <label style="margin-top: 0; color: white; font-weight: bold;">Flaschen-Foto</label>
+                    <p style="margin: 3px 0 10px 0; font-size: 11px; color: #aaa;">Optional</p>
+                    <input type="file" id="w-image-input" accept="image/*" style="display: none;" onchange="previewImage(event)">
+                    <button class="btn-secondary" style="margin: 0; border-color: #3498db; color: #3498db; padding: 8px; font-size: 14px;" onclick="document.getElementById('w-image-input').click()">📷 Auswählen</button>
+                </div>
+                <div class="img-preview-container" style="margin: 0;">
+                    <img id="w-image-preview" src="" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid #444; display: none;">
                 </div>
                 <input type="hidden" id="w-image-hidden">
             </div>
@@ -254,36 +257,38 @@
             <label>Zu welchem Flight gehört er?</label>
             <input type="number" id="w-flight" value="1" min="1" style="border: 2px solid var(--accent-color);">
             
-            <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
-                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-whisky')">Abbrechen</button>
-                <button id="btn-save-whisky" class="btn-main" style="margin: 0;" onclick="saveWhiskyFromModal()">Speichern</button>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-whisky')">Abbrechen</button>
+                <button id="btn-save-whisky" class="btn-main" onclick="saveWhiskyFromModal()">Speichern</button>
             </div>
         </div>
     </div>
 
     <div id="modal-participant" class="modal">
         <div class="modal-content">
-            <h2>Teilnehmer hinzufügen</h2>
+            <h2 style="margin-top: 0;">Teilnehmer hinzufügen</h2>
             <label>Name</label>
             <input type="text" id="live-participant-name" list="known-participants" placeholder="Name">
-            <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
-                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-participant')">Abbrechen</button>
-                <button class="btn-main" style="margin: 0;" onclick="addLiveParticipant()">Hinzufügen</button>
+            
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-participant')">Abbrechen</button>
+                <button class="btn-main" onclick="addLiveParticipant()">Hinzufügen</button>
             </div>
         </div>
     </div>
 
     <div id="modal-rating" class="modal">
         <div class="modal-content">
-            <h2 id="modal-rating-title">Bewertung im Detail</h2>
+            <h2 id="modal-rating-title" style="margin-top: 0;">Bewertung im Detail</h2>
             <p id="modal-rating-subtitle" style="color: var(--secondary-text); margin-top: -10px;"></p>
             <label>Geruch (Nase) - 0 bis 10</label><input type="number" id="r-nose" step="0.1" min="0" max="10">
             <label>Geschmack - 0 bis 10</label><input type="number" id="r-taste" step="0.1" min="0" max="10">
             <label>Abgang - 0 bis 10</label><input type="number" id="r-finish" step="0.1" min="0" max="10">
             <label>Endwertung - 0 bis 10</label><input type="number" id="r-overall" step="0.1" min="0" max="10">
-            <div style="display: flex; gap: 10px; margin-top: 20px; padding-bottom: 20px;">
-                <button class="btn-secondary" style="margin: 0;" onclick="closeModal('modal-rating')">Abbrechen</button>
-                <button class="btn-main" style="margin: 0;" onclick="saveRatingFromModal()">Speichern</button>
+            
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-rating')">Abbrechen</button>
+                <button class="btn-main" onclick="saveRatingFromModal()">Speichern</button>
             </div>
         </div>
     </div>
@@ -291,6 +296,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase19"></script>
+    <script src="app.js?v=firebase20"></script>
 </body>
 </html>

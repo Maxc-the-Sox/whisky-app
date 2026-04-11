@@ -58,7 +58,23 @@ td:first-child:active { background-color: #333; }
 .edit-icon { cursor: pointer; font-size: 18px; margin-left: 5px; }
 
 .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
-.modal-content { background-color: var(--bg-color); margin: 10% auto; padding: 20px; border: 1px solid var(--accent-color); border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+.modal-content { background-color: var(--bg-color); margin: 10% auto; padding: 20px; border: 1px solid var(--accent-color); border-radius: 12px; width: 90%; max-width: 400px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); position: relative; }
+
+/* NEU: Sticky Footer für die Buttons in Pop-ups */
+.modal-footer {
+    position: sticky;
+    bottom: -20px;
+    background: var(--bg-color);
+    padding: 15px 20px 20px 20px;
+    margin: 20px -20px -20px -20px;
+    border-top: 1px solid #444;
+    display: flex;
+    gap: 10px;
+    z-index: 100;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+.modal-footer button { margin: 0 !important; }
 
 .result-card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #444; text-align: center; cursor: pointer; transition: transform 0.1s;}
 .result-card:active { transform: scale(0.98); }
@@ -68,9 +84,7 @@ td:first-child:active { background-color: #333; }
 .score-badge { display: inline-block; background: var(--accent-color); color: white; padding: 5px 15px; border-radius: 20px; font-weight: bold; font-size: 20px; margin-top: 10px;}
 .tasting-item { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #444; }
 
-/* NEU: Styles für Detail-Karte & Bild-Upload */
 .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; font-size: 14px; margin-top: 15px; }
 .detail-grid div { background: #222; padding: 10px; border-radius: 8px; border: 1px solid #333; }
 .detail-grid strong { color: var(--accent-color); display: block; font-size: 12px; margin-bottom: 3px; }
-.img-preview-container { text-align: center; margin-top: 15px; }
-.img-preview-container img { max-width: 100px; border-radius: 8px; border: 2px solid #444; display: none; }
+.img-preview-container { margin: 0; }
