@@ -255,6 +255,7 @@ function startTastingGrid() {
     currentTasting.number = document.getElementById('setup-number').value || '';
     currentTasting.name = document.getElementById('setup-name').value || 'Unbenanntes Tasting';
     currentTasting.date = document.getElementById('setup-date').value;
+    
     currentTasting.motto = document.getElementById('setup-motto').value || '';
     currentTasting.expert = document.getElementById('setup-expert-select').value || '';
     
@@ -715,7 +716,6 @@ function loadDashboard() {
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
             let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
             
-            // NEU: Den Experten auf dem Dashboard mit anzeigen
             let expertDisplay = t.expert ? ` | 🤠 ${t.expert}` : '';
 
             html += `<li class="tasting-item">
@@ -724,8 +724,7 @@ function loadDashboard() {
                 ${winH}
                 <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
                     <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #f1c40f; color: #f1c40f;" onclick="showTastingResults('${t.id}')">🏆 Wertung</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #3498db; color: #3498db;" onclick="openTastingComments('${t.id}')">💬 Stimmen am Tisch</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #27ae60; color: #27ae60;" onclick="exportTastingToCSV('${t.id}')">📊 Excel</button>
+                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #3498db; color: #3498db;" onclick="openTastingComments('${t.id}')">💬 Letzte Stimmen</button>
                     <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px;" onclick="resumeTasting('${t.id}')">✏️ Bearbeiten</button>
                     <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #e74c3c; color: #e74c3c;" onclick="deleteSingleTasting('${t.id}')">🗑️ Löschen</button>
                 </div></li>`;
@@ -1009,26 +1008,6 @@ function updateDatalists() {
     document.getElementById('known-whiskies').innerHTML = db.map(w => `<option value="${w.name}"></option>`).join('');
     let dists = [...new Set(db.map(w => w.distillery).filter(Boolean))];
     document.getElementById('known-distilleries').innerHTML = dists.map(d => `<option value="${d}"></option>`).join('');
-}
-
-function exportTastingToCSV(id) {
-    let t = JSON.parse(localStorage.getItem('whiskyTastings')).find(x => x.id === id);
-    let csv = "\uFEFFFlight;Whisky;Fass;Finish;Bild-Link;Durchschnitt\n";
-    if(t.whiskies) {
-        t.whiskies.forEach((w, i) => {
-            let tot=0, c=0;
-            if(t.participants) {
-                t.participants.forEach(p => { 
-                    let r=t.ratings[p]?.[i]; 
-                    if(r && r.overall && !isNaN(parseFloat(r.overall))){tot+=parseFloat(r.overall); c++;}
-                });
-            }
-            let avg = c>0 ? (tot/c).toFixed(2) : "0,00";
-            csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.image || ''};${avg.replace('.', ',')}\n`;
-        });
-    }
-    let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-    a.download = `DramScore_${t.name}.csv`; a.click();
 }
 
 function deleteSingleTasting(id) {
