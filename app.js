@@ -68,31 +68,55 @@ async function compressAndUploadImage(file) {
                 const MAX_HEIGHT = 1200;
                 let width = img.width;
                 let height = img.height;
-                if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
-                else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
+
+                if (width > height) {
+                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                } else {
+                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                }
                 canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
+                
                 const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+                
                 const formData = new FormData();
                 formData.append("image", base64Data);
-                fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData })
-                .then(res => res.json()).then(data => resolve(data.data.url)).catch(err => reject(err));
+                
+                fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: "POST",
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => resolve(data.data.url))
+                .catch(err => reject(err));
             };
         };
     });
 }
 
 async function uploadGroupPhoto(event) {
-    let file = event.target.files[0]; if (!file) return;
+    let file = event.target.files[0];
+    if (!file) return;
+    
     let btn = document.getElementById('btn-group-photo');
     let status = document.getElementById('group-photo-status');
-    btn.innerText = "⏳ Lade Foto hoch..."; btn.disabled = true; status.style.display = "none";
+    
+    let oldText = btn.innerText;
+    btn.innerText = "⏳ Lade Foto hoch...";
+    btn.disabled = true;
+    status.style.display = "none";
+    
     try {
         let url = await compressAndUploadImage(file);
-        currentTasting.image = url; saveTasting(); 
-        btn.innerText = "📸 Foto ändern"; status.style.display = "block";
-    } catch(e) { alert("Upload fehlgeschlagen!"); btn.innerText = "📸 Gruppenfoto hinzufügen"; }
+        currentTasting.image = url; 
+        saveTasting(); 
+        btn.innerText = "📸 Foto ändern";
+        status.style.display = "block";
+    } catch(e) {
+        alert("Upload fehlgeschlagen!");
+        btn.innerText = oldText;
+    }
     btn.disabled = false;
 }
 
@@ -136,7 +160,11 @@ function formatTime(ts) {
 }
 
 function isSameWhisky(w1, w2) {
-    return w1.name === w2.name && (w1.distillery || '') === (w2.distillery || '') && (w1.age || '') === (w2.age || '') && (w1.cask || '') === (w2.cask || '') && (w1.finish || '') === (w2.finish || '');
+    return w1.name === w2.name && 
+           (w1.distillery || '') === (w2.distillery || '') && 
+           (w1.age || '') === (w2.age || '') && 
+           (w1.cask || '') === (w2.cask || '') && 
+           (w1.finish || '') === (w2.finish || '');
 }
 
 function addParticipant() {
@@ -148,42 +176,6 @@ function addParticipant() {
         if(!pDB.includes(name)) { pDB.push(name); localStorage.setItem('participantDB', JSON.stringify(pDB)); syncToCloud(); }
         updateParticipantList(); updateParticipantDatalist(); input.value = '';
     }
-}
-
-function updateParticipantList() {
-    const ul = document.getElementById('participant-list');
-    ul.innerHTML = '';
-    currentTasting.participants.forEach(name => { ul.innerHTML += `<li>${name} <span style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="removeParticipant('${name}')">✕</span></li>`; });
-    updateExpertSelect();
-}
-
-function removeParticipant(name) { 
-    if(name === currentTasting.expert) currentTasting.expert = '';
-    currentTasting.participants = currentTasting.participants.filter(p => p !== name); 
-    updateParticipantList(); 
-}
-
-function updateParticipantDatalist() {
-    let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
-    let list = document.getElementById('known-participants');
-    list.innerHTML = '';
-    pDB.forEach(p => list.innerHTML += `<option value="${p}"></option>`);
-}
-
-function updateExpertSelect(selectedExpertName = '') {
-    const select = document.getElementById('setup-expert-select');
-    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
-    if(currentTasting.participants.length === 0) {
-        select.innerHTML = '<option value="">-- Zuerst Teilnehmer hinzufügen --</option>';
-        return;
-    }
-    currentTasting.participants.forEach(p => {
-        const option = document.createElement('option');
-        option.value = p;
-        option.innerText = p;
-        if(p === selectedExpertName) option.selected = true;
-        select.appendChild(option);
-    });
 }
 
 function addLiveParticipant() {
@@ -223,10 +215,47 @@ function removeWhisky(idx) {
     }
 }
 
+function updateParticipantList() {
+    const ul = document.getElementById('participant-list');
+    ul.innerHTML = '';
+    currentTasting.participants.forEach(name => { ul.innerHTML += `<li>${name} <span style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="removeParticipant('${name}')">✕</span></li>`; });
+    updateExpertSelect();
+}
+
+function removeParticipant(name) { 
+    if(name === currentTasting.expert) currentTasting.expert = '';
+    currentTasting.participants = currentTasting.participants.filter(p => p !== name); 
+    updateParticipantList(); 
+}
+
+function updateParticipantDatalist() {
+    let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
+    let list = document.getElementById('known-participants');
+    list.innerHTML = '';
+    pDB.forEach(p => list.innerHTML += `<option value="${p}"></option>`);
+}
+
+function updateExpertSelect(selectedExpertName = '') {
+    const select = document.getElementById('setup-expert-select');
+    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    if(currentTasting.participants.length === 0) {
+        select.innerHTML = '<option value="">-- Zuerst Teilnehmer hinzufügen --</option>';
+        return;
+    }
+    currentTasting.participants.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p;
+        option.innerText = p;
+        if(p === selectedExpertName) option.selected = true;
+        select.appendChild(option);
+    });
+}
+
 function startTastingGrid() {
     currentTasting.number = document.getElementById('setup-number').value || '';
     currentTasting.name = document.getElementById('setup-name').value || 'Unbenanntes Tasting';
     currentTasting.date = document.getElementById('setup-date').value;
+    
     currentTasting.motto = document.getElementById('setup-motto').value || '';
     currentTasting.expert = document.getElementById('setup-expert-select').value || '';
     
@@ -268,7 +297,8 @@ function openExpertChangeModal() {
     select.innerHTML = '<option value="">-- Keiner --</option>';
     currentTasting.participants.forEach(p => {
         const option = document.createElement('option'); 
-        option.value = p; option.innerText = p;
+        option.value = p; 
+        option.innerText = p;
         if(p === currentTasting.expert) option.selected = true;
         select.appendChild(option);
     });
@@ -325,6 +355,7 @@ function renderGrid() {
     currentTasting.participants.forEach(pName => {
         let isExpert = pName === currentTasting.expert;
         let displayName = isExpert ? `<strong>🤠 ${pName}</strong>` : pName;
+
         html += `<tr><td style="background:#222; position:sticky; left:0; z-index:2;" onclick="removeLiveParticipant('${pName}')">${displayName} <span style="font-size:10px; color:#666;">🗑️</span></td>`;
         cols.forEach(c => {
             let r = currentTasting.ratings[pName]?.[c.idx];
@@ -659,46 +690,70 @@ function loadFeed() {
     container.innerHTML = html;
 }
 
+// GEÄNDERT: loadDashboard sortiert jetzt nach Experten-Namen
 function loadDashboard() {
     const container = document.getElementById('tasting-list-container');
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     if(tastings.length === 0) return container.innerHTML = "<p style='text-align:center;'>Noch keine Tastings.</p>";
     tastings.sort((a, b) => new Date(b.date) - new Date(a.date));
+    
     let html = '';
-    let years = [...new Set(tastings.map(t => t.date.split('-')[0]))].sort((a, b) => b - a);
-    years.forEach((y, i) => {
-        let openAttr = i === 0 ? "open" : "";
-        html += `<details class="year-details" ${openAttr}><summary class="year-summary">${y} (${tastings.filter(t=>t.date.startsWith(y)).length})</summary><ul style="list-style:none; padding:0; margin-top:15px;">`;
-        tastings.filter(t => t.date.startsWith(y)).forEach(t => {
-            let winData = calculateWinnerForDashboard(t);
-            
-            let cF = [];
-            if(winData && winData.whisky && winData.whisky.cask) cF.push(`Fass: ${winData.whisky.cask}`);
-            if(winData && winData.whisky && winData.whisky.finish) cF.push(`Finish: ${winData.whisky.finish}`);
-            let caskDashInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
-            
-            let clickCard = (winData && winData.whisky) ? `onclick="showDetailCard('${encodeURIComponent(JSON.stringify(winData.whisky))}')" style="cursor:pointer;"` : "";
-            let imgIcon = (winData && winData.whisky && winData.whisky.image) ? ' 📸' : '';
-            
-            let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
-            
-            let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
-            let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
-            
-            let expertDisplay = t.expert ? ` | 🤠 ${t.expert}` : '';
+    
+    // Alle verfügbaren Expertennamen auslesen
+    let experts = [...new Set(tastings.map(t => t.expert || ''))];
+    
+    // Sortieren: Namen zuerst, leere (Gemeinschaftliche) ans Ende
+    experts.sort((a, b) => {
+        if(a === '') return 1;
+        if(b === '') return -1;
+        return a.localeCompare(b);
+    });
 
-            html += `<li class="tasting-item">
-                <strong>${numDisplay}${t.name}${groupImgIcon}</strong> <br>
-                <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${t.participants ? t.participants.length : 0} | 🥃 ${t.whiskies ? t.whiskies.length : 0}${expertDisplay}</span>
-                ${winH}
-                <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #f1c40f; color: #f1c40f;" onclick="showTastingResults('${t.id}')">🏆 Wertung</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #3498db; color: #3498db;" onclick="openTastingComments('${t.id}')">💬 Stimmen am Tisch</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px;" onclick="resumeTasting('${t.id}')">✏️ Bearbeiten</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #e74c3c; color: #e74c3c;" onclick="deleteSingleTasting('${t.id}')">🗑️ Löschen</button>
-                </div></li>`;
+    experts.forEach(expert => {
+        let expertTastings = tastings.filter(t => (t.expert || '') === expert);
+        if(expertTastings.length === 0) return;
+
+        let title = expert ? `🤠 Tastings von ${expert}` : `🥃 Gemeinschaftliche Tastings`;
+        
+        // Die neue Überschrift für den Experten-Block (ersetzt das alte "Deine Tastings")
+        html += `<h2 style="margin-top: 35px; border-bottom: 1px solid #444; padding-bottom: 5px; color: var(--accent-color);">${title}</h2>`;
+
+        let years = [...new Set(expertTastings.map(t => t.date.split('-')[0]))].sort((a, b) => b - a);
+        years.forEach((y, i) => {
+            let openAttr = i === 0 ? "open" : "";
+            html += `<details class="year-details" ${openAttr}><summary class="year-summary">${y} (${expertTastings.filter(t=>t.date.startsWith(y)).length})</summary><ul style="list-style:none; padding:0; margin-top:15px;">`;
+            
+            expertTastings.filter(t => t.date.startsWith(y)).forEach(t => {
+                let winData = calculateWinnerForDashboard(t);
+                
+                let cF = [];
+                if(winData && winData.whisky && winData.whisky.cask) cF.push(`Fass: ${winData.whisky.cask}`);
+                if(winData && winData.whisky && winData.whisky.finish) cF.push(`Finish: ${winData.whisky.finish}`);
+                let caskDashInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
+                
+                let clickCard = (winData && winData.whisky) ? `onclick="showDetailCard('${encodeURIComponent(JSON.stringify(winData.whisky))}')" style="cursor:pointer;"` : "";
+                let imgIcon = (winData && winData.whisky && winData.whisky.image) ? ' 📸' : '';
+                
+                let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
+                
+                let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
+                let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
+                
+                let expertDisplay = t.expert ? ` | 🤠 ${t.expert}` : '';
+
+                html += `<li class="tasting-item">
+                    <strong>${numDisplay}${t.name}${groupImgIcon}</strong> <br>
+                    <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${t.participants ? t.participants.length : 0} | 🥃 ${t.whiskies ? t.whiskies.length : 0}${expertDisplay}</span>
+                    ${winH}
+                    <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
+                        <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #f1c40f; color: #f1c40f;" onclick="showTastingResults('${t.id}')">🏆 Wertung</button>
+                        <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #3498db; color: #3498db;" onclick="openTastingComments('${t.id}')">💬 Stimmen am Tisch</button>
+                        <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px;" onclick="resumeTasting('${t.id}')">✏️ Bearbeiten</button>
+                        <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #e74c3c; color: #e74c3c;" onclick="deleteSingleTasting('${t.id}')">🗑️ Löschen</button>
+                    </div></li>`;
+            });
+            html += `</ul></details>`;
         });
-        html += `</ul></details>`;
     });
     container.innerHTML = html;
 }
