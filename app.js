@@ -68,55 +68,31 @@ async function compressAndUploadImage(file) {
                 const MAX_HEIGHT = 1200;
                 let width = img.width;
                 let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                } else {
-                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                }
+                if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
                 canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                
                 const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-                
                 const formData = new FormData();
                 formData.append("image", base64Data);
-                
-                fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: "POST",
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => resolve(data.data.url))
-                .catch(err => reject(err));
+                fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData })
+                .then(res => res.json()).then(data => resolve(data.data.url)).catch(err => reject(err));
             };
         };
     });
 }
 
 async function uploadGroupPhoto(event) {
-    let file = event.target.files[0];
-    if (!file) return;
-    
+    let file = event.target.files[0]; if (!file) return;
     let btn = document.getElementById('btn-group-photo');
     let status = document.getElementById('group-photo-status');
-    
-    let oldText = btn.innerText;
-    btn.innerText = "⏳ Lade Foto hoch...";
-    btn.disabled = true;
-    status.style.display = "none";
-    
+    btn.innerText = "⏳ Lade Foto hoch..."; btn.disabled = true; status.style.display = "none";
     try {
         let url = await compressAndUploadImage(file);
-        currentTasting.image = url; 
-        saveTasting(); 
-        btn.innerText = "📸 Foto ändern";
-        status.style.display = "block";
-    } catch(e) {
-        alert("Upload fehlgeschlagen!");
-        btn.innerText = oldText;
-    }
+        currentTasting.image = url; saveTasting(); 
+        btn.innerText = "📸 Foto ändern"; status.style.display = "block";
+    } catch(e) { alert("Upload fehlgeschlagen!"); btn.innerText = "📸 Gruppenfoto hinzufügen"; }
     btn.disabled = false;
 }
 
@@ -160,11 +136,7 @@ function formatTime(ts) {
 }
 
 function isSameWhisky(w1, w2) {
-    return w1.name === w2.name && 
-           (w1.distillery || '') === (w2.distillery || '') && 
-           (w1.age || '') === (w2.age || '') && 
-           (w1.cask || '') === (w2.cask || '') && 
-           (w1.finish || '') === (w2.finish || '');
+    return w1.name === w2.name && (w1.distillery || '') === (w2.distillery || '') && (w1.age || '') === (w2.age || '') && (w1.cask || '') === (w2.cask || '') && (w1.finish || '') === (w2.finish || '');
 }
 
 function addParticipant() {
@@ -175,43 +147,6 @@ function addParticipant() {
         let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
         if(!pDB.includes(name)) { pDB.push(name); localStorage.setItem('participantDB', JSON.stringify(pDB)); syncToCloud(); }
         updateParticipantList(); updateParticipantDatalist(); input.value = '';
-    }
-}
-
-function addLiveParticipant() {
-    const input = document.getElementById('live-participant-name');
-    const name = input.value.trim();
-    if(name && !currentTasting.participants.includes(name)) {
-        currentTasting.participants.push(name);
-        let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
-        if(!pDB.includes(name)) { pDB.push(name); localStorage.setItem('participantDB', JSON.stringify(pDB)); syncToCloud(); }
-        updateParticipantDatalist(); input.value = ''; closeModal('modal-participant'); renderGrid();
-    }
-}
-
-function removeLiveParticipant(name) {
-    if(confirm(`${name} entfernen?`)) {
-        if(name === currentTasting.expert) currentTasting.expert = '';
-        currentTasting.participants = currentTasting.participants.filter(p => p !== name);
-        if(currentTasting.ratings[name]) delete currentTasting.ratings[name];
-        renderGrid();
-    }
-}
-
-function removeWhisky(idx) {
-    let wName = currentTasting.whiskies[idx].name;
-    if(confirm(`${wName} wirklich löschen? Alle Wertungen dafür gehen verloren.`)) {
-        currentTasting.whiskies.splice(idx, 1);
-        for(let p in currentTasting.ratings) {
-            let newRatings = {};
-            for(let rIdx in currentTasting.ratings[p]) {
-                let ri = parseInt(rIdx);
-                if(ri < idx) newRatings[ri] = currentTasting.ratings[p][ri];
-                if(ri > idx) newRatings[ri-1] = currentTasting.ratings[p][ri];
-            }
-            currentTasting.ratings[p] = newRatings;
-        }
-        renderGrid();
     }
 }
 
@@ -251,11 +186,47 @@ function updateExpertSelect(selectedExpertName = '') {
     });
 }
 
+function addLiveParticipant() {
+    const input = document.getElementById('live-participant-name');
+    const name = input.value.trim();
+    if(name && !currentTasting.participants.includes(name)) {
+        currentTasting.participants.push(name);
+        let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
+        if(!pDB.includes(name)) { pDB.push(name); localStorage.setItem('participantDB', JSON.stringify(pDB)); syncToCloud(); }
+        updateParticipantDatalist(); input.value = ''; closeModal('modal-participant'); renderGrid();
+    }
+}
+
+function removeLiveParticipant(name) {
+    if(confirm(`${name} entfernen?`)) {
+        if(name === currentTasting.expert) currentTasting.expert = '';
+        currentTasting.participants = currentTasting.participants.filter(p => p !== name);
+        if(currentTasting.ratings[name]) delete currentTasting.ratings[name];
+        renderGrid();
+    }
+}
+
+function removeWhisky(idx) {
+    let wName = currentTasting.whiskies[idx].name;
+    if(confirm(`${wName} wirklich löschen? Alle Wertungen dafür gehen verloren.`)) {
+        currentTasting.whiskies.splice(idx, 1);
+        for(let p in currentTasting.ratings) {
+            let newRatings = {};
+            for(let rIdx in currentTasting.ratings[p]) {
+                let ri = parseInt(rIdx);
+                if(ri < idx) newRatings[ri] = currentTasting.ratings[p][ri];
+                if(ri > idx) newRatings[ri-1] = currentTasting.ratings[p][ri];
+            }
+            currentTasting.ratings[p] = newRatings;
+        }
+        renderGrid();
+    }
+}
+
 function startTastingGrid() {
     currentTasting.number = document.getElementById('setup-number').value || '';
     currentTasting.name = document.getElementById('setup-name').value || 'Unbenanntes Tasting';
     currentTasting.date = document.getElementById('setup-date').value;
-    
     currentTasting.motto = document.getElementById('setup-motto').value || '';
     currentTasting.expert = document.getElementById('setup-expert-select').value || '';
     
@@ -297,8 +268,7 @@ function openExpertChangeModal() {
     select.innerHTML = '<option value="">-- Keiner --</option>';
     currentTasting.participants.forEach(p => {
         const option = document.createElement('option'); 
-        option.value = p; 
-        option.innerText = p;
+        option.value = p; option.innerText = p;
         if(p === currentTasting.expert) option.selected = true;
         select.appendChild(option);
     });
@@ -355,7 +325,6 @@ function renderGrid() {
     currentTasting.participants.forEach(pName => {
         let isExpert = pName === currentTasting.expert;
         let displayName = isExpert ? `<strong>🤠 ${pName}</strong>` : pName;
-
         html += `<tr><td style="background:#222; position:sticky; left:0; z-index:2;" onclick="removeLiveParticipant('${pName}')">${displayName} <span style="font-size:10px; color:#666;">🗑️</span></td>`;
         cols.forEach(c => {
             let r = currentTasting.ratings[pName]?.[c.idx];
@@ -724,7 +693,7 @@ function loadDashboard() {
                 ${winH}
                 <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
                     <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #f1c40f; color: #f1c40f;" onclick="showTastingResults('${t.id}')">🏆 Wertung</button>
-                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #3498db; color: #3498db;" onclick="openTastingComments('${t.id}')">💬 Letzte Stimmen</button>
+                    <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #3498db; color: #3498db;" onclick="openTastingComments('${t.id}')">💬 Stimmen am Tisch</button>
                     <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px;" onclick="resumeTasting('${t.id}')">✏️ Bearbeiten</button>
                     <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #e74c3c; color: #e74c3c;" onclick="deleteSingleTasting('${t.id}')">🗑️ Löschen</button>
                 </div></li>`;
