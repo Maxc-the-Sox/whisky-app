@@ -18,12 +18,26 @@
         </header>
         <div class="content">
             <button class="btn-main" onclick="navigateTo('view-setup')">Neues Tasting starten</button>
-            <button class="btn-secondary" style="border-color: #e67e22; color: #e67e22;" onclick="loadCabinet(); navigateTo('view-cabinet')">🗄️ Dein Whisky-Schrank</button>
+            <button class="btn-secondary" style="border-color: #e67e22; color: #e67e22;" onclick="loadCabinet(); navigateTo('view-cabinet')">🗄️ Whisky-Schrank</button>
+            
+            <button class="btn-secondary" style="border-color: #3498db; color: #3498db;" onclick="loadFeed(); navigateTo('view-feed')">💬 Letzte Stimmen am Tisch</button>
+            
             <button class="btn-secondary" style="border-color: #9b59b6; color: #9b59b6;" onclick="loadStats(); navigateTo('view-stats')">📊 Hall of Fame & Statistiken</button>
             <button class="btn-secondary" style="border-color: #666; color: #ccc;" onclick="navigateTo('view-settings')">⚙️ Einstellungen & Backup</button>
             
-            <h2 style="margin-top: 30px;">Deine Tastings</h2>
+            <h2 style="margin-top: 35px; border-bottom: 1px solid #444; padding-bottom: 5px;">Deine Tastings</h2>
             <div id="tasting-list-container"></div>
+        </div>
+    </section>
+
+    <section id="view-feed" class="view" style="display: none;">
+        <header>
+            <button class="btn-back" onclick="navigateTo('view-dashboard')">← Zurück</button>
+            <h1 style="color: #3498db;">💬 Stimmen am Tisch</h1>
+            <p>Die neuesten Kommentare</p>
+        </header>
+        <div class="content">
+            <div id="feed-container-main"></div>
         </div>
     </section>
 
@@ -58,6 +72,9 @@
             
             <label>Datum</label>
             <input type="date" id="setup-date">
+
+            <label>📜 Motto / Einladungstext (Optional)</label>
+            <textarea id="setup-motto" placeholder="Hier den Text eures Experten einfügen..."></textarea>
             
             <label>Teilnehmer hinzufügen</label>
             <datalist id="known-participants"></datalist>
@@ -66,6 +83,11 @@
                 <button class="btn-secondary" style="margin-top: 5px; width: auto;" onclick="addParticipant()">Hinzufügen</button>
             </div>
             <ul id="participant-list" class="tag-list"></ul>
+
+            <label>🤠 Whisky-Experte (Leitung)</label>
+            <select id="setup-expert-select">
+                <option value="">-- Zuerst Teilnehmer hinzufügen --</option>
+            </select>
 
             <button class="btn-main" onclick="startTastingGrid()">Zum Tasting-Tisch</button>
         </div>
@@ -88,11 +110,16 @@
                 <input type="date" id="grid-edit-date" onchange="updateTastingHeader()" 
                        style="background: transparent; border: none; color: var(--secondary-text); font-size: 14px; text-align: center; width: auto; margin: 0 auto; display: block;">
                 
-                <div style="margin-top: 15px; text-align: center;">
-                    <input type="file" id="tasting-image-input" accept="image/*" style="display: none;" onchange="uploadGroupPhoto(event)">
-                    <button id="btn-group-photo" class="btn-secondary" style="margin: 0 auto; width: auto; padding: 8px 16px; font-size: 14px; border-color: #3498db; color: #3498db; border-radius: 20px; display: block;" onclick="document.getElementById('tasting-image-input').click()">📸 Gruppenfoto hinzufügen</button>
-                    <div id="group-photo-status" style="font-size: 12px; color: #2ecc71; margin-top: 5px; display: none;">✅ Foto gespeichert</div>
+                <div id="grid-expert-display" style="text-align: center; color: #f1c40f; font-size: 14px; margin-top: 8px; cursor: pointer;" onclick="openExpertChangeModal()">
+                    🤠 Experte: <span id="grid-expert-name" style="text-decoration: underline; font-weight: bold;">-</span>
                 </div>
+
+                <div style="margin-top: 15px; text-align: center; display: flex; justify-content: center; gap: 10px;">
+                    <input type="file" id="tasting-image-input" accept="image/*" style="display: none;" onchange="uploadGroupPhoto(event)">
+                    <button id="btn-group-photo" class="btn-secondary" style="margin: 0; width: auto; padding: 8px 16px; font-size: 14px; border-color: #3498db; color: #3498db; border-radius: 20px; display: block;" onclick="document.getElementById('tasting-image-input').click()">📸 Gruppenfoto</button>
+                    <button class="btn-secondary" style="margin: 0; width: auto; padding: 8px 16px; font-size: 14px; border-color: #3498db; color: #3498db; border-radius: 20px; display: block;" onclick="openMottoModal()">📝 Motto ändern</button>
+                </div>
+                <div id="group-photo-status" style="font-size: 12px; color: #2ecc71; margin-top: 5px; display: none; text-align: center;">✅ Foto gespeichert</div>
 
             </div>
         </header>
@@ -106,16 +133,46 @@
 
     <section id="view-results" class="view" style="display: none;">
         <header>
+            <button class="btn-back" onclick="exitToDashboard()">← Zurück</button>
             <h1 style="color: #f1c40f;">🏆 Ergebnisse</h1>
-            <p id="results-title" style="color: var(--secondary-text); font-size: 18px; margin-top: 5px;">Tasting Name</p>
+            <p id="results-title" style="color: var(--secondary-text); font-size: 18px; margin-top: 5px;"></p>
+            
+            <p id="results-expert" style="color: #f1c40f; font-weight: bold; font-size: 14px; margin-top: 5px; padding: 0 20px;"></p>
+            <p id="results-participants" style="color: #aaa; font-size: 13px; margin-top: 2px; padding: 0 20px;"></p>
         </header>
         <div class="content">
             <img id="results-group-photo" src="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; margin-bottom: 25px; border: 2px solid #444; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" onclick="showImageFullscreen(this.src)">
             
+            <div id="results-motto-container"></div>
+
             <div id="podium-container"></div>
+            
+            <div style="margin-top: 30px; border-top: 1px solid #444; padding-top: 20px;">
+                <h2 style="margin-top: 0; color: #3498db; text-align: center; font-size: 20px;">💬 Stimmen zum Abend</h2>
+                <div id="results-comments-list" style="margin-bottom: 15px;"></div>
+                <div style="display: flex; gap: 8px; margin-bottom: 25px;">
+                    <input type="text" id="r-comment-name" list="known-participants" placeholder="Name" style="width: 35%; margin: 0; padding: 10px; font-size: 14px;">
+                    <input type="text" id="r-comment-text" placeholder="Deine Stimme..." style="flex: 1; margin: 0; padding: 10px; font-size: 14px;">
+                    <button class="btn-main" style="margin: 0; width: auto; padding: 10px 15px;" onclick="addResultsTastingComment()">➕</button>
+                </div>
+            </div>
+
             <button class="btn-main" onclick="exitToDashboard()">Zum Dashboard zurück</button>
         </div>
     </section>
+
+    <div id="modal-change-expert" class="modal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h2 style="margin-top: 0;">🤠 Experten wechseln</h2>
+                <select id="expert-change-select"></select>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-change-expert')">Abbrechen</button>
+                <button class="btn-main" onclick="saveExpertChange()">Speichern</button>
+            </div>
+        </div>
+    </div>
 
     <section id="view-stats" class="view" style="display: none;">
         <header>
@@ -164,6 +221,19 @@
         </div>
     </section>
 
+    <div id="modal-motto" class="modal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <h2 style="margin-top: 0;">📜 Motto bearbeiten</h2>
+                <textarea id="live-motto-text" style="min-height: 250px;" placeholder="Text hier einfügen..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeModal('modal-motto')">Abbrechen</button>
+                <button class="btn-main" onclick="saveMottoFromModal()">Speichern</button>
+            </div>
+        </div>
+    </div>
+
     <div id="modal-whisky-details" class="modal">
         <div class="modal-content">
             <button class="btn-back" style="position: absolute; top: 10px; right: 10px; left: auto; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 35px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 10;" onclick="closeModal('modal-whisky-details')">✕</button>
@@ -185,9 +255,7 @@
 
                     <div style="margin-top: 25px; border-top: 1px solid #444; padding-top: 15px;">
                         <h3 style="margin-top: 0; font-size: 16px;">💬 Stimmen am Tisch</h3>
-                        
-                        <div id="detail-comments-list" style="margin-bottom: 15px;">
-                            </div>
+                        <div id="detail-comments-list" style="margin-bottom: 15px;"></div>
                         
                         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                             <input type="text" id="w-comment-name" list="known-participants" placeholder="Name" style="width: 35%; margin: 0; padding: 8px; font-size: 14px;">
@@ -341,8 +409,7 @@
                 <h2 style="margin-top: 0;">💬 Stimmen am Tisch</h2>
                 <p id="tasting-comments-subtitle" style="color: var(--secondary-text); font-size: 14px; margin-top: -10px;"></p>
                 
-                <div id="tasting-comments-list" style="margin-bottom: 15px;">
-                    </div>
+                <div id="tasting-comments-list" style="margin-bottom: 15px;"></div>
                 
                 <div style="display: flex; gap: 8px; margin-bottom: 10px;">
                     <input type="text" id="t-comment-name" list="known-participants" placeholder="Name" style="width: 35%; margin: 0; padding: 8px; font-size: 14px;">
@@ -366,6 +433,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase30"></script>
+    <script src="app.js?v=firebase44"></script>
 </body>
 </html>

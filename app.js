@@ -141,7 +141,7 @@ function showImageFullscreen(url) {
 // APP LOGIK
 // ==========================================
 
-let currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {}, comments: [] };
+let currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {}, comments: [], motto: '', expert: '' };
 let editingWhiskyIndex = null;
 let currentRatingContext = { participant: null, whiskyIndex: null };
 let currentDetailWhisky = null; 
@@ -151,6 +151,12 @@ function navigateTo(viewId) {
     document.querySelectorAll('.view').forEach(view => view.style.display = 'none');
     document.getElementById(viewId).style.display = 'block';
     window.scrollTo(0, 0);
+}
+
+function formatTime(ts) {
+    if(!ts || isNaN(ts)) return '';
+    let d = new Date(ts);
+    return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' }) + ', ' + d.toLocaleTimeString('de-DE', {hour: '2-digit', minute:'2-digit'}) + ' Uhr';
 }
 
 function isSameWhisky(w1, w2) {
@@ -185,6 +191,7 @@ function addLiveParticipant() {
 
 function removeLiveParticipant(name) {
     if(confirm(`${name} entfernen?`)) {
+        if(name === currentTasting.expert) currentTasting.expert = '';
         currentTasting.participants = currentTasting.participants.filter(p => p !== name);
         if(currentTasting.ratings[name]) delete currentTasting.ratings[name];
         renderGrid();
@@ -212,9 +219,15 @@ function updateParticipantList() {
     const ul = document.getElementById('participant-list');
     ul.innerHTML = '';
     currentTasting.participants.forEach(name => { ul.innerHTML += `<li>${name} <span style="color:#e74c3c; cursor:pointer; margin-left:5px;" onclick="removeParticipant('${name}')">✕</span></li>`; });
+    updateExpertSelect();
 }
 
-function removeParticipant(name) { currentTasting.participants = currentTasting.participants.filter(p => p !== name); updateParticipantList(); }
+function removeParticipant(name) { 
+    if(name === currentTasting.expert) currentTasting.expert = '';
+    currentTasting.participants = currentTasting.participants.filter(p => p !== name); 
+    updateParticipantList(); 
+}
+
 function updateParticipantDatalist() {
     let pDB = JSON.parse(localStorage.getItem('participantDB')) || [];
     let list = document.getElementById('known-participants');
@@ -222,19 +235,42 @@ function updateParticipantDatalist() {
     pDB.forEach(p => list.innerHTML += `<option value="${p}"></option>`);
 }
 
+function updateExpertSelect(selectedExpertName = '') {
+    const select = document.getElementById('setup-expert-select');
+    select.innerHTML = '<option value="">-- Bitte wählen --</option>';
+    if(currentTasting.participants.length === 0) {
+        select.innerHTML = '<option value="">-- Zuerst Teilnehmer hinzufügen --</option>';
+        return;
+    }
+    currentTasting.participants.forEach(p => {
+        const option = document.createElement('option');
+        option.value = p;
+        option.innerText = p;
+        if(p === selectedExpertName) option.selected = true;
+        select.appendChild(option);
+    });
+}
+
 function startTastingGrid() {
     currentTasting.number = document.getElementById('setup-number').value || '';
     currentTasting.name = document.getElementById('setup-name').value || 'Unbenanntes Tasting';
     currentTasting.date = document.getElementById('setup-date').value;
+    currentTasting.motto = document.getElementById('setup-motto').value || '';
+    currentTasting.expert = document.getElementById('setup-expert-select').value || '';
     
     if(!currentTasting.id) currentTasting.id = 't_' + Date.now();
     if(currentTasting.participants.length === 0) return alert("Bitte füge mindestens einen Teilnehmer hinzu!");
+    
+    if(!currentTasting.whiskies) currentTasting.whiskies = [];
+    if(!currentTasting.ratings) currentTasting.ratings = {};
+    if(!currentTasting.comments) currentTasting.comments = [];
     
     document.getElementById('grid-edit-number').value = currentTasting.number;
     document.getElementById('grid-edit-name').value = currentTasting.name;
     document.getElementById('grid-edit-date').value = currentTasting.date;
     
     updateGroupPhotoUI();
+    updateExpertDisplay();
     updateDatalists(); renderGrid(); navigateTo('view-grid');
 }
 
@@ -242,6 +278,42 @@ function updateTastingHeader() {
     currentTasting.number = document.getElementById('grid-edit-number').value;
     currentTasting.name = document.getElementById('grid-edit-name').value;
     currentTasting.date = document.getElementById('grid-edit-date').value;
+}
+
+function openMottoModal() {
+    document.getElementById('live-motto-text').value = currentTasting.motto || '';
+    document.getElementById('modal-motto').style.display = 'block';
+}
+
+function saveMottoFromModal() {
+    currentTasting.motto = document.getElementById('live-motto-text').value;
+    saveTasting();
+    closeModal('modal-motto');
+}
+
+function openExpertChangeModal() {
+    const select = document.getElementById('expert-change-select'); 
+    select.innerHTML = '<option value="">-- Keiner --</option>';
+    currentTasting.participants.forEach(p => {
+        const option = document.createElement('option'); 
+        option.value = p; 
+        option.innerText = p;
+        if(p === currentTasting.expert) option.selected = true;
+        select.appendChild(option);
+    });
+    document.getElementById('modal-change-expert').style.display = 'block';
+}
+
+function saveExpertChange() { 
+    currentTasting.expert = document.getElementById('expert-change-select').value; 
+    updateExpertDisplay(); 
+    renderGrid(); 
+    saveTasting(); 
+    closeModal('modal-change-expert'); 
+}
+
+function updateExpertDisplay() { 
+    document.getElementById('grid-expert-name').innerText = currentTasting.expert || 'Keiner festgelegt'; 
 }
 
 function renderGrid() {
@@ -280,7 +352,10 @@ function renderGrid() {
 
     let html = `<thead>${flightRow}${whiskyRow}</thead><tbody>`;
     currentTasting.participants.forEach(pName => {
-        html += `<tr><td style="background:#222; position:sticky; left:0; z-index:2;" onclick="removeLiveParticipant('${pName}')">${pName} <span style="font-size:10px; color:#666;">🗑️</span></td>`;
+        let isExpert = pName === currentTasting.expert;
+        let displayName = isExpert ? `<strong>🤠 ${pName}</strong>` : pName;
+
+        html += `<tr><td style="background:#222; position:sticky; left:0; z-index:2;" onclick="removeLiveParticipant('${pName}')">${displayName} <span style="font-size:10px; color:#666;">🗑️</span></td>`;
         cols.forEach(c => {
             let r = currentTasting.ratings[pName]?.[c.idx];
             let val = r && r.overall ? r.overall : '';
@@ -381,14 +456,17 @@ function renderWhiskyComments() {
     list.innerHTML = '';
     
     if (!currentDetailWhisky.comments || currentDetailWhisky.comments.length === 0) {
-        list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic;">Noch keine Stimmen am Tisch vorhanden.</div>';
+        list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen am Tisch vorhanden.</div>';
         return;
     }
     
     currentDetailWhisky.comments.forEach(c => {
+        let ts = c.timestamp || parseInt(c.id.split('_')[1]);
+        let timeStr = formatTime(ts);
+        
         list.innerHTML += `
             <div class="comment-box">
-                <div class="comment-author">${c.name}</div>
+                <div class="comment-author">${c.name} <span class="comment-time">${timeStr}</span></div>
                 <div class="comment-text">${c.text}</div>
                 <div class="comment-delete" onclick="deleteWhiskyComment('${c.id}')">🗑️</div>
             </div>
@@ -404,8 +482,10 @@ function addWhiskyComment() {
     
     if(!currentDetailWhisky.comments) currentDetailWhisky.comments = [];
     
+    let now = Date.now();
     let newComment = {
-        id: 'c_' + Date.now(),
+        id: 'c_' + now,
+        timestamp: now,
         name: nameInput.value.trim(),
         text: textInput.value.trim()
     };
@@ -416,6 +496,7 @@ function addWhiskyComment() {
     
     updateWhiskyInAllDBs(currentDetailWhisky);
     renderWhiskyComments();
+    if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); 
 }
 
 function deleteWhiskyComment(id) {
@@ -423,6 +504,7 @@ function deleteWhiskyComment(id) {
         currentDetailWhisky.comments = currentDetailWhisky.comments.filter(c => c.id !== id);
         updateWhiskyInAllDBs(currentDetailWhisky);
         renderWhiskyComments();
+        if(document.getElementById('view-feed').style.display !== 'none') loadFeed();
     }
 }
 
@@ -510,6 +592,11 @@ function skipRatingFromModal() {
 }
 
 function saveTasting() {
+    if(!currentTasting.whiskies) currentTasting.whiskies = [];
+    if(!currentTasting.participants) currentTasting.participants = [];
+    if(!currentTasting.ratings) currentTasting.ratings = {};
+    if(!currentTasting.comments) currentTasting.comments = [];
+    
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
     let idx = tastings.findIndex(t => t.id === currentTasting.id);
     if(idx >= 0) tastings[idx] = currentTasting; else tastings.push(currentTasting);
@@ -532,6 +619,74 @@ function calculateWinnerForDashboard(t) {
         if (avg > highAvg && avg > 0) { highAvg = avg; best = w; }
     });
     return { whisky: best, score: highAvg };
+}
+
+function loadFeed() {
+    let feed = [];
+    let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
+    
+    db.forEach(w => {
+        if(w.comments) {
+            w.comments.forEach(c => {
+                let ts = c.timestamp || parseInt(c.id.split('_')[1]);
+                if(!isNaN(ts)) feed.push({ type: 'whisky', target: w, comment: c, time: ts });
+            });
+        }
+    });
+    
+    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
+    tastings.forEach(t => {
+        if(t.comments) {
+            t.comments.forEach(c => {
+                let ts = c.timestamp || parseInt(c.id.split('_')[1]);
+                if(!isNaN(ts)) feed.push({ type: 'tasting', target: t, comment: c, time: ts });
+            });
+        }
+    });
+    
+    feed.sort((a,b) => b.time - a.time);
+    feed = feed.slice(0, 15); 
+    
+    let container = document.getElementById('feed-container-main');
+    if(feed.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:#888; font-size:14px; margin-top:30px;'>Noch keine Kommentare vorhanden.</p>";
+        return;
+    }
+    
+    let html = '<div class="feed-container">';
+    feed.forEach(item => {
+        let timeStr = formatTime(item.time);
+        
+        if(item.type === 'whisky') {
+            let w = item.target;
+            let ageStr = w.age ? (isNaN(w.age) ? w.age : w.age+'J') : '-';
+            let caskInfo = (w.cask ? 'Fass: '+w.cask : '') + (w.finish ? ' | Finish: '+w.finish : '');
+            let title = `🥃 <strong>${w.name}</strong> (${ageStr}) <br><span style="font-size:11px; color:#aaa;">${caskInfo}</span>`;
+            let onClick = `showDetailCard('${encodeURIComponent(JSON.stringify(w))}')`;
+            
+            html += `<div class="feed-item" onclick="${onClick}">
+                <div style="font-size:13px; color:var(--accent-color); margin-bottom:5px;">🗣️ <strong>${item.comment.name}</strong> hat einen neuen Kommentar hinterlassen bei:</div>
+                <div style="background:#111; padding:8px; border-radius:5px; border:1px solid #333; margin-bottom:5px;">${title}</div>
+                <div style="font-style:italic; font-size:13px; color:#ddd;">"${item.comment.text}"</div>
+                <div class="feed-time">🕒 ${timeStr}</div>
+            </div>`;
+        } else {
+            let t = item.target;
+            let numDisplay = t.number ? `#${t.number} ` : "";
+            let title = `🏆 <strong>Tasting ${numDisplay}${t.name}</strong>`;
+            
+            let onClick = `showTastingResults('${t.id}')`;
+            
+            html += `<div class="feed-item" onclick="${onClick}">
+                <div style="font-size:13px; color:#3498db; margin-bottom:5px;">🗣️ <strong>${item.comment.name}</strong> hat einen neuen Kommentar hinterlassen bei:</div>
+                <div style="background:#111; padding:8px; border-radius:5px; border:1px solid #333; margin-bottom:5px;">${title}</div>
+                <div style="font-style:italic; font-size:13px; color:#ddd;">"${item.comment.text}"</div>
+                <div class="feed-time">🕒 ${timeStr}</div>
+            </div>`;
+        }
+    });
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 function loadDashboard() {
@@ -560,9 +715,12 @@ function loadDashboard() {
             let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
             let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
             
+            // NEU: Den Experten auf dem Dashboard mit anzeigen
+            let expertDisplay = t.expert ? ` | 🤠 ${t.expert}` : '';
+
             html += `<li class="tasting-item">
                 <strong>${numDisplay}${t.name}${groupImgIcon}</strong> <br>
-                <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${t.participants.length} | 🥃 ${t.whiskies.length}</span>
+                <span style="color:#bdc3c7; font-size:14px;">📅 ${t.date} | 👥 ${t.participants ? t.participants.length : 0} | 🥃 ${t.whiskies ? t.whiskies.length : 0}${expertDisplay}</span>
                 ${winH}
                 <div style="display: flex; gap: 8px; margin-top: 15px; flex-wrap: wrap;">
                     <button class="btn-secondary" style="margin-top: 0; padding: 8px; font-size: 14px; flex: 1; min-width: 80px; border-color: #f1c40f; color: #f1c40f;" onclick="showTastingResults('${t.id}')">🏆 Wertung</button>
@@ -595,14 +753,17 @@ function renderTastingComments() {
     let t = tastings.find(x => x.id === currentCommentTastingId);
     
     if (!t.comments || t.comments.length === 0) {
-        list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic;">Noch keine Stimmen am Tisch vorhanden.</div>';
+        list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen am Tisch vorhanden.</div>';
         return;
     }
     
     t.comments.forEach(c => {
+        let ts = c.timestamp || parseInt(c.id.split('_')[1]);
+        let timeStr = formatTime(ts);
+        
         list.innerHTML += `
             <div class="comment-box">
-                <div class="comment-author">${c.name}</div>
+                <div class="comment-author">${c.name} <span class="comment-time">${timeStr}</span></div>
                 <div class="comment-text">${c.text}</div>
                 <div class="comment-delete" onclick="deleteTastingComment('${c.id}')">🗑️</div>
             </div>
@@ -622,8 +783,10 @@ function addTastingComment() {
     
     if(!tastings[tIndex].comments) tastings[tIndex].comments = [];
     
+    let now = Date.now();
     tastings[tIndex].comments.push({
-        id: 'c_' + Date.now(),
+        id: 'c_' + now,
+        timestamp: now,
         name: nameInput.value.trim(),
         text: textInput.value.trim()
     });
@@ -634,6 +797,7 @@ function addTastingComment() {
     nameInput.value = '';
     textInput.value = '';
     renderTastingComments();
+    if(document.getElementById('view-feed').style.display !== 'none') loadFeed();
 }
 
 function deleteTastingComment(id) {
@@ -647,31 +811,113 @@ function deleteTastingComment(id) {
         localStorage.setItem('whiskyTastings', JSON.stringify(tastings));
         syncToCloud();
         renderTastingComments();
+        if(document.getElementById('view-feed').style.display !== 'none') loadFeed();
+    }
+}
+
+function renderResultsTastingComments() {
+    let list = document.getElementById('results-comments-list');
+    list.innerHTML = '';
+
+    if (!currentTasting.comments || currentTasting.comments.length === 0) {
+        list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen zum Abend vorhanden.</div>';
+        return;
+    }
+
+    currentTasting.comments.forEach(c => {
+        let ts = c.timestamp || parseInt(c.id.split('_')[1]);
+        let timeStr = formatTime(ts);
+
+        list.innerHTML += `
+            <div class="comment-box">
+                <div class="comment-author">${c.name} <span class="comment-time">${timeStr}</span></div>
+                <div class="comment-text">${c.text}</div>
+                <div class="comment-delete" onclick="deleteResultsTastingComment('${c.id}')">🗑️</div>
+            </div>
+        `;
+    });
+}
+
+function addResultsTastingComment() {
+    let nameInput = document.getElementById('r-comment-name');
+    let textInput = document.getElementById('r-comment-text');
+
+    if(!nameInput.value || !textInput.value) return alert("Bitte Name und deine Stimme eingeben!");
+
+    if(!currentTasting.comments) currentTasting.comments = [];
+
+    let now = Date.now();
+    currentTasting.comments.push({
+        id: 'c_' + now,
+        timestamp: now,
+        name: nameInput.value.trim(),
+        text: textInput.value.trim()
+    });
+
+    saveTasting(); 
+    nameInput.value = '';
+    textInput.value = '';
+    renderResultsTastingComments();
+}
+
+function deleteResultsTastingComment(id) {
+    if(confirm("Eintrag wirklich löschen?")) {
+        currentTasting.comments = currentTasting.comments.filter(c => c.id !== id);
+        saveTasting();
+        renderResultsTastingComments();
     }
 }
 
 function resumeTasting(id) {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    currentTasting = JSON.parse(JSON.stringify(tastings.find(t => t.id === id))); 
+    let found = tastings.find(t => t.id === id);
+    if(!found) return;
+    
+    currentTasting = JSON.parse(JSON.stringify(found)); 
+    if(!currentTasting.whiskies) currentTasting.whiskies = [];
+    if(!currentTasting.participants) currentTasting.participants = [];
+    if(!currentTasting.ratings) currentTasting.ratings = {};
+    if(!currentTasting.comments) currentTasting.comments = [];
+    
     document.getElementById('grid-edit-number').value = currentTasting.number || '';
     document.getElementById('grid-edit-name').value = currentTasting.name || '';
     document.getElementById('grid-edit-date').value = currentTasting.date || '';
+    
     updateGroupPhotoUI();
+    updateParticipantList(); 
+    updateExpertSelect(currentTasting.expert);
+    updateExpertDisplay();
+    
     renderGrid(); navigateTo('view-grid');
 }
 
 function showTastingResults(id) {
-    // Wenn das Modal noch offen ist, schließen wir es, um direkt zur Auswertung zu springen
     closeModal('modal-whisky-details'); 
     
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    currentTasting = JSON.parse(JSON.stringify(tastings.find(t => t.id === id))); 
+    let foundTasting = tastings.find(t => t.id === id);
+    if(!foundTasting) return;
+    
+    currentTasting = JSON.parse(JSON.stringify(foundTasting)); 
+    
+    if(!currentTasting.whiskies) currentTasting.whiskies = [];
+    if(!currentTasting.participants) currentTasting.participants = [];
+    if(!currentTasting.ratings) currentTasting.ratings = {};
+    if(!currentTasting.comments) currentTasting.comments = [];
     
     const container = document.getElementById('podium-container');
     container.innerHTML = '';
     
     let numDisplay = currentTasting.number ? `#${currentTasting.number} ` : "";
-    document.getElementById('results-title').innerText = numDisplay + currentTasting.name;
+    let dateDisplay = currentTasting.date ? ` • 📅 ${currentTasting.date.split('-').reverse().join('.')}` : "";
+    document.getElementById('results-title').innerText = numDisplay + currentTasting.name + dateDisplay;
+
+    let allP = currentTasting.participants || [];
+    let expertHtml = currentTasting.expert ? `🤠 Whisky-Experte: ${currentTasting.expert}` : 'Kein Experte festgelegt';
+    document.getElementById('results-expert').innerText = expertHtml;
+
+    let nonExperts = allP.filter(p => p !== currentTasting.expert);
+    document.getElementById('results-participants').innerText = `👥 Am Tisch (${allP.length}): ${nonExperts.join(', ')}`;
 
     let groupPhoto = document.getElementById('results-group-photo');
     if (currentTasting.image) {
@@ -679,6 +925,17 @@ function showTastingResults(id) {
         groupPhoto.style.display = "block";
     } else {
         groupPhoto.style.display = "none";
+    }
+
+    let mottoCont = document.getElementById('results-motto-container');
+    if(currentTasting.motto && currentTasting.motto.trim() !== '') {
+        mottoCont.innerHTML = `
+        <details class="motto-details">
+            <summary class="motto-summary">📜 Motto & Einleitung lesen</summary>
+            <div class="motto-text">${currentTasting.motto}</div>
+        </details>`;
+    } else {
+        mottoCont.innerHTML = '';
     }
 
     let res = currentTasting.whiskies.map((w, index) => {
@@ -709,12 +966,23 @@ function showTastingResults(id) {
             <div class="score-badge">Ø ${r.avg.toFixed(2)} Punkte</div>
         </div>`;
     });
+    
+    if(res.length === 0) {
+        container.innerHTML = "<p style='text-align:center; color:#aaa; font-size:14px;'>Keine Whiskys in diesem Tasting.</p>";
+    }
+
+    renderResultsTastingComments();
+    
     navigateTo('view-results');
 }
 
 function finishAndShowResults() { saveTasting(); showTastingResults(currentTasting.id); }
 
-function exitToDashboard() { currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {}, comments: [] }; loadDashboard(); navigateTo('view-dashboard'); }
+function exitToDashboard() { 
+    currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {}, comments: [], motto: '', expert: '' }; 
+    loadDashboard(); 
+    navigateTo('view-dashboard'); 
+}
 
 function saveToMasterDB(w) {
     let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
@@ -746,15 +1014,19 @@ function updateDatalists() {
 function exportTastingToCSV(id) {
     let t = JSON.parse(localStorage.getItem('whiskyTastings')).find(x => x.id === id);
     let csv = "\uFEFFFlight;Whisky;Fass;Finish;Bild-Link;Durchschnitt\n";
-    t.whiskies.forEach((w, i) => {
-        let tot=0, c=0;
-        t.participants.forEach(p => { 
-            let r=t.ratings[p]?.[i]; 
-            if(r && r.overall && !isNaN(parseFloat(r.overall))){tot+=parseFloat(r.overall); c++;}
+    if(t.whiskies) {
+        t.whiskies.forEach((w, i) => {
+            let tot=0, c=0;
+            if(t.participants) {
+                t.participants.forEach(p => { 
+                    let r=t.ratings[p]?.[i]; 
+                    if(r && r.overall && !isNaN(parseFloat(r.overall))){tot+=parseFloat(r.overall); c++;}
+                });
+            }
+            let avg = c>0 ? (tot/c).toFixed(2) : "0,00";
+            csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.image || ''};${avg.replace('.', ',')}\n`;
         });
-        let avg = c>0 ? (tot/c).toFixed(2) : "0,00";
-        csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.image || ''};${avg.replace('.', ',')}\n`;
-    });
+    }
     let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
     a.download = `DramScore_${t.name}.csv`; a.click();
 }
@@ -882,7 +1154,6 @@ function showParticipantStats() {
             let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null;
             if(r && r.overall && !isNaN(parseFloat(r.overall))) {
                 let score = parseFloat(r.overall);
-                // NEU: ID des Tastings mit übergeben
                 myWhiskys.push({ ...w, score: score, tasting: t.name, tastingId: t.id });
                 if(w.distillery) {
                     if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 };
@@ -909,7 +1180,6 @@ function showParticipantStats() {
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         let imgIcon = w.image ? ' 📸' : '';
         
-        // Klickbarer Tasting Link
         let tastingLink = `<span style="color:#3498db; cursor:pointer; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span>`;
         
         html += `<div class="result-card" style="border-color: ${borderCol};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${tastingLink}</span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
@@ -922,7 +1192,6 @@ function showParticipantStats() {
         let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
         let imgIcon = w.image ? ' 📸' : '';
         
-        // Klickbarer Tasting Link
         let tastingLink = `<span style="color:#3498db; cursor:pointer; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span>`;
         
         html += `<div class="result-card" style="border-color: #e74c3c; opacity: 0.9;" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${ageStr}${imgIcon}</strong>${caskHtml}<br><span style="font-size:11px; color:#999;">in: ${tastingLink}</span></div><div class="score-badge" style="background:#e74c3c; margin:0;">${w.score.toFixed(2)}</div></div></div>`;
@@ -940,7 +1209,6 @@ function loadCabinet() {
                 let key = w.name + '|' + (w.distillery || '') + '|' + (w.age || '') + '|' + (w.cask || '') + '|' + (w.finish || '');
 
                 if(!cabinetWhiskys[key]) {
-                    // NEU: tastingsRef speichert die ID mit, damit wir sie später verlinken können
                     cabinetWhiskys[key] = { ...w, tot: 0, count: 0, tastingsRef: [], comments: w.comments || [] };
                 } else if (w.comments && w.comments.length > 0) {
                     cabinetWhiskys[key].comments = w.comments;
@@ -948,7 +1216,6 @@ function loadCabinet() {
 
                 let tLabel = t.number ? `#${t.number} ${t.name}` : t.name;
                 
-                // Prüfen ob wir dieses Tasting schon hinzugefügt haben (damit es nicht doppelt auftaucht)
                 if(!cabinetWhiskys[key].tastingsRef.find(tr => tr.id === t.id)) {
                     cabinetWhiskys[key].tastingsRef.push({ id: t.id, label: tLabel });
                 }
@@ -983,7 +1250,6 @@ function loadCabinet() {
         let caskStr = w.cask || '-';
         let finishStr = w.finish || '-';
 
-        // NEU: Aus den Tasting-Infos klickbare blaue Links bauen
         let tastingsStr = w.tastingsRef.map(tr => `<span style="color: #3498db; cursor: pointer; text-decoration: underline;" onclick="event.stopPropagation(); showTastingResults('${tr.id}')">${tr.label}</span>`).join(', ');
 
         html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')">

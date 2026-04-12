@@ -26,7 +26,10 @@ h3 { color: var(--accent-color); }
 .view { min-height: 100vh; }
 label { display: block; margin-top: 15px; color: var(--secondary-text); font-size: 14px; }
 
-input { width: 100%; padding: 12px; margin-top: 5px; background: var(--card-bg); border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; }
+/* GEÄNDERT: select hinzugefügt für das Experten-Dropdown */
+input, textarea, select { width: 100%; padding: 12px; margin-top: 5px; background: var(--card-bg); border: 1px solid #444; border-radius: 8px; color: white; font-size: 16px; box-sizing: border-box; font-family: inherit; }
+textarea { resize: vertical; min-height: 100px; }
+select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3e%3cpath d='M7 10l5 5 5-5z'/%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 10px center; background-size: 20px; padding-right: 40px; }
 
 .btn-main, .btn-secondary { border-radius: 10px; width: 100%; font-size: 16px; cursor: pointer; font-weight: bold; padding: 15px; box-sizing: border-box; }
 .btn-main { background-color: var(--accent-color); color: white; border: none; margin-top: 25px; }
@@ -57,37 +60,11 @@ td:first-child:active { background-color: #333; }
 .inline-input { width: 60px; padding: 8px; margin: 0; text-align: center; font-weight: bold; font-size: 16px; background: #111; border: 1px solid #555; color: white;}
 .edit-icon { cursor: pointer; font-size: 18px; margin-left: 5px; }
 
-/* MODAL DESIGN UPDATE FÜR IPHONE */
+/* MODAL DESIGN */
 .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); backdrop-filter: blur(5px); }
-
-.modal-content { 
-    background-color: var(--bg-color); 
-    margin: 5% auto; 
-    border: 1px solid var(--accent-color); 
-    border-radius: 12px; 
-    width: 90%; 
-    max-width: 400px; 
-    max-height: 85vh; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5); 
-    display: flex; 
-    flex-direction: column;
-    overflow: hidden; 
-}
-
-.modal-body {
-    padding: 20px;
-    overflow-y: auto; 
-    flex: 1; 
-    -webkit-overflow-scrolling: touch; 
-}
-
-.modal-footer {
-    padding: 15px 20px;
-    background: #111;
-    border-top: 1px solid #444;
-    display: flex;
-    gap: 10px;
-}
+.modal-content { background-color: var(--bg-color); margin: 5% auto; border: 1px solid var(--accent-color); border-radius: 12px; width: 90%; max-width: 400px; max-height: 85vh; box-shadow: 0 10px 25px rgba(0,0,0,0.5); display: flex; flex-direction: column; overflow: hidden; }
+.modal-body { padding: 20px; overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; }
+.modal-footer { padding: 15px 20px; background: #111; border-top: 1px solid #444; display: flex; gap: 10px; }
 .modal-footer button { margin: 0 !important; }
 
 /* RESULT CARDS & BILDER */
@@ -104,49 +81,24 @@ td:first-child:active { background-color: #333; }
 .detail-grid strong { color: var(--accent-color); display: block; font-size: 12px; margin-bottom: 3px; }
 .img-preview-container { margin: 0; }
 
-/* Styles für den Whisky-Schrank */
-.search-input {
-    width: 100%;
-    padding: 15px;
-    background: #111;
-    border: 2px solid var(--accent-color);
-    border-radius: 30px;
-    color: white;
-    font-size: 16px;
-    margin-bottom: 25px;
-    outline: none;
-    text-align: center;
-}
+.search-input { width: 100%; padding: 15px; background: #111; border: 2px solid var(--accent-color); border-radius: 30px; color: white; font-size: 16px; margin-bottom: 25px; outline: none; text-align: center; }
 .search-input:focus { box-shadow: 0 0 10px rgba(211, 84, 0, 0.5); }
 .cabinet-card { text-align: left; margin-bottom: 15px; }
 
-/* NEU: Styles für Kommentare */
-.comment-box {
-    background: #111;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 8px;
-    font-size: 13px;
-    position: relative;
-    border: 1px solid #333;
-    text-align: left;
-}
-.comment-author {
-    color: var(--accent-color);
-    font-weight: bold;
-    margin-bottom: 3px;
-    font-size: 12px;
-}
-.comment-text {
-    color: #ddd;
-    line-height: 1.4;
-    padding-right: 20px; /* Platz für den Mülleimer */
-}
-.comment-delete {
-    position: absolute;
-    right: 10px;
-    top: 10px;
-    cursor: pointer;
-    color: #e74c3c;
-    font-size: 14px;
-}
+/* Styles für Kommentare */
+.comment-box { background: #111; padding: 10px; border-radius: 8px; margin-bottom: 8px; font-size: 13px; position: relative; border: 1px solid #333; text-align: left; }
+.comment-author { color: var(--accent-color); font-weight: bold; margin-bottom: 3px; font-size: 12px; }
+.comment-time { color: #888; font-size: 10px; font-weight: normal; margin-left: 5px; }
+.comment-text { color: #ddd; line-height: 1.4; padding-right: 20px; }
+.comment-delete { position: absolute; right: 10px; top: 10px; cursor: pointer; color: #e74c3c; font-size: 14px; }
+
+/* Dashboard Feed / News */
+.feed-container { background: transparent; margin-top: 15px; }
+.feed-item { background: var(--card-bg); border-radius: 8px; padding: 15px; margin-bottom: 12px; border: 1px solid #444; cursor: pointer; transition: transform 0.1s; text-align: left; }
+.feed-item:active { transform: scale(0.98); }
+.feed-time { font-size: 11px; color: #888; margin-top: 8px; border-top: 1px solid #444; padding-top: 5px; text-align: right; }
+
+/* Motto Box Design */
+.motto-details { background: #222; border-radius: 10px; border: 1px solid #444; margin-bottom: 25px; overflow: hidden; }
+.motto-summary { padding: 12px; color: #3498db; font-weight: bold; cursor: pointer; list-style: none; text-align: center; }
+.motto-text { padding: 15px; border-top: 1px solid #333; color: #ccc; font-style: italic; line-height: 1.6; white-space: pre-wrap; text-align: left; font-size: 14px; }
