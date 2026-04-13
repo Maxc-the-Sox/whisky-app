@@ -384,7 +384,6 @@ function openGlobalWhiskyEdit() {
     document.getElementById('w-image-hidden').value = "";
     
     let w = currentDetailWhisky;
-    // GEÄNDERT: ID ist w-wbLink
     ['name', 'distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'vintage', 'bottled', 'wbLink'].forEach(key => {
         if(document.getElementById('w-'+key)) document.getElementById('w-'+key).value = w[key] || '';
     });
@@ -425,16 +424,11 @@ function updateWhiskyGlobally(oldW, newW) {
 function openWhiskyModal(index) {
     editingWhiskyIndex = index;
     document.getElementById('w-image-input').value = ""; document.getElementById('w-image-preview').style.display = "none"; document.getElementById('w-image-hidden').value = "";
-    
     if(index !== null) {
         let w = currentTasting.whiskies[index];
-        // GEÄNDERT: ID ist wbLink
-        ['name', 'distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'flight', 'vintage', 'bottled', 'wbLink'].forEach(key => { 
-            if(document.getElementById('w-'+key)) document.getElementById('w-'+key).value = w[key] || ''; 
-        });
+        ['name', 'distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'flight', 'vintage', 'bottled', 'wbLink'].forEach(key => { if(document.getElementById('w-'+key)) document.getElementById('w-'+key).value = w[key] || ''; });
         if(w.image) { document.getElementById('w-image-preview').src = w.image; document.getElementById('w-image-preview').style.display = "inline-block"; document.getElementById('w-image-hidden').value = w.image; }
     } else {
-        // GEÄNDERT: ID w-wbLink korrekt leeren
         ['w-name', 'w-distillery', 'w-cask', 'w-finish', 'w-type', 'w-country', 'w-age', 'w-abv', 'w-vintage', 'w-bottled', 'w-wbLink'].forEach(id => {
             if(document.getElementById(id)) document.getElementById(id).value = '';
         });
@@ -451,7 +445,6 @@ async function saveWhiskyFromModal() {
     let finalImageUrl = document.getElementById('w-image-hidden').value;
     if(fileInput.files.length > 0) { try { finalImageUrl = await compressAndUploadImage(fileInput.files[0]); } catch(e) { alert("Fail!"); } }
     
-    // GEÄNDERT: ID wbLink korrekt auslesen
     let wData = { 
         name: wName, distillery: document.getElementById('w-distillery').value, cask: document.getElementById('w-cask').value, 
         finish: document.getElementById('w-finish').value, type: document.getElementById('w-type').value, 
@@ -508,6 +501,7 @@ function updateWhiskyInAllDBs(updatedWhisky) {
     localStorage.setItem('whiskyTastings', JSON.stringify(t)); syncToCloud();
 }
 
+// GEÄNDERT: URL Scanner (Chamäleon Button)
 function showDetailCard(encodedObj) {
     currentDetailWhisky = JSON.parse(decodeURIComponent(encodedObj));
     let w = currentDetailWhisky;
@@ -529,6 +523,24 @@ function showDetailCard(encodedObj) {
     if(w.wbLink && w.wbLink.trim() !== '') {
         wbBtn.href = w.wbLink;
         wbBtn.style.display = 'block';
+        
+        let linkText = "Webseite";
+        let linkIcon = "🔗";
+        try {
+            let urlObj = new URL(w.wbLink);
+            let domain = urlObj.hostname.replace('www.', '');
+            if(domain.includes('whiskybase.com')) {
+                linkText = "Whiskybase";
+                linkIcon = "🥃";
+            } else {
+                linkText = domain;
+                linkIcon = "🔗";
+            }
+        } catch(e) {
+            linkText = "Webseite";
+        }
+        wbBtn.innerText = `${linkIcon} Auf ${linkText} ansehen`;
+        
     } else {
         wbBtn.style.display = 'none';
     }
@@ -743,23 +755,7 @@ function resumeTasting(id) {
 function finishAndShowResults() { saveTasting(); showTastingResults(currentTasting.id); }
 function exitToDashboard() { currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {}, comments: [], motto: '', expert: '' }; loadDashboard(); navigateTo('view-dashboard'); }
 function saveToMasterDB(w) { let db = JSON.parse(localStorage.getItem('whiskyDB')) || []; if(!db.find(x => isSameWhisky(x, w))) { db.push(w); localStorage.setItem('whiskyDB', JSON.stringify(db)); syncToCloud(); } }
-
-function autoFillWhisky(i) { 
-    let db = JSON.parse(localStorage.getItem('whiskyDB')) || []; 
-    let w = db.find(x => x.name === i.value); 
-    if(w) { 
-        // GEÄNDERT: ID w-wbLink korrekt gesetzt
-        ['distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'vintage', 'bottled', 'wbLink'].forEach(k => { 
-            if(document.getElementById('w-'+k)) document.getElementById('w-'+k).value = w[k] || ''; 
-        }); 
-        if(w.image) { 
-            document.getElementById('w-image-preview').src = w.image; 
-            document.getElementById('w-image-preview').style.display = "inline-block"; 
-            document.getElementById('w-image-hidden').value = w.image; 
-        } 
-    } 
-}
-
+function autoFillWhisky(i) { let db = JSON.parse(localStorage.getItem('whiskyDB')) || []; let w = db.find(x => x.name === i.value); if(w) { ['distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'vintage', 'bottled', 'wbLink'].forEach(k => { if(document.getElementById('w-'+k)) document.getElementById('w-'+k).value = w[k] || ''; }); if(w.image) { document.getElementById('w-image-preview').src = w.image; document.getElementById('w-image-preview').style.display = "inline-block"; document.getElementById('w-image-hidden').value = w.image; } } }
 function updateDatalists() { let db = JSON.parse(localStorage.getItem('whiskyDB')) || []; document.getElementById('known-whiskies').innerHTML = db.map(w => `<option value="${w.name}"></option>`).join(''); let dists = [...new Set(db.map(w => w.distillery).filter(Boolean))]; document.getElementById('known-distilleries').innerHTML = dists.map(d => `<option value="${d}"></option>`).join(''); }
 
 function exportTastingToCSV(id) { 
@@ -836,7 +832,7 @@ function showParticipantStats() {
     let top10 = [...myWhiskys].sort((a,b) => b.score - a.score).slice(0, 10);
     let bottom10 = [...myWhiskys].sort((a,b) => a.score - b.score).slice(0, 10);
     let bestDist = { name: '-', avg: 0 }; Object.keys(distStats).forEach(d => { let avg = distStats[d].tot / distStats[d].count; if(avg > bestDist.avg) bestDist = { name: d, avg: avg }; });
-    let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;"><div>🥃 ${myWhiskys.length} bewertet</div><div style="color:#3498db; font-weight:bold;">${bestDist.name}</div><div style="font-size:12px; color:#aaa;">Lieblings-Destille (Ø ${bestDist.avg.toFixed(2)})</div></div><h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
+    let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;"><div>🥃 ${myWhiskys.length} bewertet</div><div style="color:#3498db; font-weight:bold;">${bestDist.name}</div><div style="font-size:12px; color:#aaa;">Liebling (Ø ${bestDist.avg.toFixed(2)})</div></div><h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
     top10.forEach((w, idx) => { let bc = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444')); html += `<div class="result-card" style="border-color: ${bc};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}</strong><br><span style="font-size:11px; color:#999;">in: <span style="color:#3498db; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span></span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`; });
     container.innerHTML = html;
 }
