@@ -18,37 +18,11 @@
         </header>
         <div class="content">
             <button class="btn-main" onclick="navigateTo('view-setup')">Neues Tasting starten</button>
-            <button class="btn-secondary" style="border-color: #e67e22; color: #e67e22;" onclick="loadCabinet(); navigateTo('view-cabinet')">🗄️ Whisky-Schrank</button>
-            
-            <button class="btn-secondary" style="border-color: #3498db; color: #3498db;" onclick="loadFeed(); navigateTo('view-feed')">💬 Letzte Stimmen am Tisch</button>
-            
             <button class="btn-secondary" style="border-color: #9b59b6; color: #9b59b6;" onclick="loadStats(); navigateTo('view-stats')">📊 Hall of Fame & Statistiken</button>
             <button class="btn-secondary" style="border-color: #666; color: #ccc;" onclick="navigateTo('view-settings')">⚙️ Einstellungen & Backup</button>
             
+            <h2 style="margin-top: 30px;">Deine Tastings</h2>
             <div id="tasting-list-container"></div>
-        </div>
-    </section>
-
-    <section id="view-feed" class="view" style="display: none;">
-        <header>
-            <button class="btn-back" onclick="navigateTo('view-dashboard')">← Zurück</button>
-            <h1 style="color: #3498db;">💬 Stimmen am Tisch</h1>
-            <p>Die neuesten Kommentare</p>
-        </header>
-        <div class="content">
-            <div id="feed-container-main"></div>
-        </div>
-    </section>
-
-    <section id="view-cabinet" class="view" style="display: none;">
-        <header>
-            <button class="btn-back" onclick="navigateTo('view-dashboard')">← Zurück</button>
-            <h1 style="color: #e67e22;">🗄️ Whisky-Schrank</h1>
-            <p>Alle eure getrunkenen Flaschen</p>
-        </header>
-        <div class="content">
-            <input type="text" id="search-cabinet" class="search-input" onkeyup="filterCabinet()" placeholder="🔍 Suchen (Name, Destille, Fass...)">
-            <div id="cabinet-container"></div>
         </div>
     </section>
 
@@ -71,9 +45,6 @@
             
             <label>Datum</label>
             <input type="date" id="setup-date">
-
-            <label>📜 Motto / Einladungstext (Optional)</label>
-            <textarea id="setup-motto" placeholder="Hier den Text eures Experten einfügen..."></textarea>
             
             <label>Teilnehmer hinzufügen</label>
             <datalist id="known-participants"></datalist>
@@ -82,14 +53,6 @@
                 <button class="btn-secondary" style="margin-top: 5px; width: auto;" onclick="addParticipant()">Hinzufügen</button>
             </div>
             <ul id="participant-list" class="tag-list"></ul>
-
-            <label>Whisky-Experte & Symbol</label>
-            <div style="display: flex; gap: 10px;">
-                <select id="setup-expert-select" style="flex: 1;" onchange="updateSetupIcon()">
-                    <option value="">-- Teilnehmer hinzufügen --</option>
-                </select>
-                <select id="setup-expert-icon" style="width: 80px; padding: 12px 5px; text-align: center;"></select>
-            </div>
 
             <button class="btn-main" onclick="startTastingGrid()">Zum Tasting-Tisch</button>
         </div>
@@ -111,18 +74,6 @@
                 </div>
                 <input type="date" id="grid-edit-date" onchange="updateTastingHeader()" 
                        style="background: transparent; border: none; color: var(--secondary-text); font-size: 14px; text-align: center; width: auto; margin: 0 auto; display: block;">
-                
-                <div id="grid-expert-display" style="text-align: center; color: #f1c40f; font-size: 14px; margin-top: 8px; cursor: pointer;" onclick="openExpertChangeModal()">
-                    <span id="grid-expert-icon-display">🤠</span> Experte: <span id="grid-expert-name" style="text-decoration: underline; font-weight: bold;">-</span>
-                </div>
-
-                <div style="margin-top: 15px; text-align: center; display: flex; justify-content: center; gap: 10px;">
-                    <input type="file" id="tasting-image-input" accept="image/*" style="display: none;" onchange="uploadGroupPhoto(event)">
-                    <button id="btn-group-photo" class="btn-secondary" style="margin: 0; width: auto; padding: 8px 16px; font-size: 14px; border-color: #3498db; color: #3498db; border-radius: 20px; display: block;" onclick="document.getElementById('tasting-image-input').click()">📸 Gruppenfoto</button>
-                    <button class="btn-secondary" style="margin: 0; width: auto; padding: 8px 16px; font-size: 14px; border-color: #3498db; color: #3498db; border-radius: 20px; display: block;" onclick="openMottoModal()">📝 Motto ändern</button>
-                </div>
-                <div id="group-photo-status" style="font-size: 12px; color: #2ecc71; margin-top: 5px; display: none; text-align: center;">✅ Foto gespeichert</div>
-
             </div>
         </header>
         <div class="content">
@@ -135,49 +86,14 @@
 
     <section id="view-results" class="view" style="display: none;">
         <header>
-            <button class="btn-back" onclick="exitToDashboard()">← Zurück</button>
             <h1 style="color: #f1c40f;">🏆 Ergebnisse</h1>
-            <p id="results-title" style="color: var(--secondary-text); font-size: 18px; margin-top: 5px;"></p>
-            
-            <p id="results-expert" style="color: #f1c40f; font-weight: bold; font-size: 14px; margin-top: 5px; padding: 0 20px;"></p>
-            <p id="results-participants" style="color: #aaa; font-size: 13px; margin-top: 2px; padding: 0 20px;"></p>
+            <p id="results-title" style="color: var(--secondary-text); font-size: 18px; margin-top: 5px;">Tasting Name</p>
         </header>
         <div class="content">
-            <img id="results-group-photo" src="" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 12px; margin-bottom: 25px; border: 2px solid #444; display: none; box-shadow: 0 5px 15px rgba(0,0,0,0.5);" onclick="showImageFullscreen(this.src)">
-            
-            <div id="results-motto-container"></div>
-
             <div id="podium-container"></div>
-            
-            <div style="margin-top: 30px; border-top: 1px solid #444; padding-top: 20px;">
-                <h2 style="margin-top: 0; color: #3498db; text-align: center; font-size: 20px;">💬 Stimmen zum Abend</h2>
-                <div id="results-comments-list" style="margin-bottom: 15px;"></div>
-                <div style="display: flex; gap: 8px; margin-bottom: 25px;">
-                    <input type="text" id="r-comment-name" list="known-participants" placeholder="Name" style="width: 35%; margin: 0; padding: 10px; font-size: 14px;">
-                    <input type="text" id="r-comment-text" placeholder="Deine Stimme..." style="flex: 1; margin: 0; padding: 10px; font-size: 14px;">
-                    <button class="btn-main" style="margin: 0; width: auto; padding: 10px 15px;" onclick="addResultsTastingComment()">➕</button>
-                </div>
-            </div>
-
             <button class="btn-main" onclick="exitToDashboard()">Zum Dashboard zurück</button>
         </div>
     </section>
-
-    <div id="modal-change-expert" class="modal">
-        <div class="modal-content">
-            <div class="modal-body">
-                <h2 style="margin-top: 0;">🤠 Experten wechseln</h2>
-                <label>Person</label>
-                <select id="expert-change-select" onchange="updateModalIcon()"></select>
-                <label>Sein / Ihr Symbol</label>
-                <select id="expert-change-icon" style="text-align: center;"></select>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('modal-change-expert')">Abbrechen</button>
-                <button class="btn-main" onclick="saveExpertChange()">Speichern</button>
-            </div>
-        </div>
-    </div>
 
     <section id="view-stats" class="view" style="display: none;">
         <header>
@@ -196,7 +112,7 @@
             
             <hr style="border: 1px solid #444; margin: 40px 0 30px;">
             
-            <h2 style="color: #3498db; text-align: center;">👤 Genießer-Profile</h2>
+            <h2 style="color: #3498db; text-align: center;">👤 Trinker-Profile</h2>
             <select id="stat-participant-select" onchange="showParticipantStats()" style="width: 100%; padding: 12px; background: #222; color: white; border: 1px solid #555; border-radius: 8px; font-size: 16px; margin-bottom: 20px;">
                 <option value="">-- Teilnehmer auswählen --</option>
             </select>
@@ -226,240 +142,92 @@
         </div>
     </section>
 
-    <div id="modal-motto" class="modal">
-        <div class="modal-content">
-            <div class="modal-body">
-                <h2 style="margin-top: 0;">📜 Motto bearbeiten</h2>
-                <textarea id="live-motto-text" style="min-height: 250px;" placeholder="Text hier einfügen..."></textarea>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" onclick="closeModal('modal-motto')">Abbrechen</button>
-                <button class="btn-main" onclick="saveMottoFromModal()">Speichern</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-whisky-details" class="modal">
-        <div class="modal-content">
-            <button class="btn-back" style="position: absolute; top: 10px; right: 10px; left: auto; background: rgba(0,0,0,0.7); color: white; border-radius: 50%; width: 35px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 10;" onclick="closeModal('modal-whisky-details')">✕</button>
-            
-            <div class="modal-body" style="padding: 0;">
-                <img id="detail-img" src="" style="width: 100%; max-height: 350px; object-fit: cover; display: none;" onclick="showImageFullscreen(this.src)">
-                <div style="padding: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div style="flex: 1; padding-right: 10px;">
-                            <h2 id="detail-name" style="margin-top: 0; font-size: 22px; margin-bottom: 5px;"></h2>
-                            <div id="detail-distillery" style="color: var(--secondary-text); font-size: 16px;"></div>
-                        </div>
-                        <button class="btn-secondary" style="margin: 0; padding: 6px 12px; width: auto; font-size: 12px; border-color: #3498db; color: #3498db; border-radius: 15px; flex-shrink: 0;" onclick="openGlobalWhiskyEdit()">✏️ Bearbeiten</button>
-                    </div>
-                    
-                    <div class="detail-grid">
-                        <div><strong>Art</strong> <span id="detail-type">-</span></div>
-                        <div><strong>Land</strong> <span id="detail-country">-</span></div>
-                        <div><strong>Jahrgang</strong> <span id="detail-vintage">-</span></div>
-                        <div><strong>Abgefüllt</strong> <span id="detail-bottled">-</span></div>
-                        <div><strong>Alter</strong> <span id="detail-age">-</span></div>
-                        <div><strong>Alkohol</strong> <span id="detail-abv">-</span></div>
-                        <div style="grid-column: span 2;"><strong>Fass</strong> <span id="detail-cask">-</span></div>
-                        <div style="grid-column: span 2;"><strong>Finish</strong> <span id="detail-finish">-</span></div>
-                    </div>
-
-                    <a id="detail-wb-link" href="#" target="_blank" class="btn-secondary" style="display: none; text-align: center; text-decoration: none; padding: 10px; margin-top: 15px; border-color: #f1c40f; color: #f1c40f; border-radius: 8px;">🥃 Auf Whiskybase ansehen</a>
-
-                    <div style="margin-top: 25px; border-top: 1px solid #444; padding-top: 15px;">
-                        <h3 style="margin-top: 0; font-size: 16px;">💬 Stimmen am Tisch</h3>
-                        <div id="detail-comments-list" style="margin-bottom: 15px;"></div>
-                        
-                        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                            <input type="text" id="w-comment-name" list="known-participants" placeholder="Name" style="width: 35%; margin: 0; padding: 8px; font-size: 14px;">
-                            <input type="text" id="w-comment-text" placeholder="Deine Stimme..." style="flex: 1; margin: 0; padding: 8px; font-size: 14px;">
-                            <button class="btn-main" style="margin: 0; width: auto; padding: 8px 15px;" onclick="addWhiskyComment()">➕</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div id="modal-whisky" class="modal">
         <div class="modal-content">
-            <div class="modal-body">
-                <h2 id="modal-whisky-title" style="margin-top: 0;">Whisky eintragen</h2>
-                <datalist id="known-whiskies"></datalist>
-                <datalist id="known-distilleries"></datalist>
-                <datalist id="whisky-types">
-                    <option value="Single Malt Scotch"></option>
-                    <option value="Blended Malt Scotch"></option>
-                    <option value="Blended Scotch"></option>
-                    <option value="Single Pot Still (Irish)"></option>
-                    <option value="Bourbon"></option>
-                    <option value="Rye Whiskey"></option>
-                    <option value="Tennessee Whiskey"></option>
-                    <option value="Single Grain"></option>
-                    <option value="Corn Whiskey"></option>
-                    <option value="Single Malt (Japan)"></option>
-                    <option value="Single Malt (Deutschland)"></option>
-                </datalist>
-                <datalist id="whisky-casks">
-                    <option value="Ex-Bourbon Cask"></option>
-                    <option value="Sherry Oloroso"></option>
-                    <option value="Pedro Ximénez (PX) Sherry"></option>
-                    <option value="Ruby Port"></option>
-                    <option value="Port Cask"></option>
-                    <option value="Rum Cask"></option>
-                    <option value="Virgin Oak"></option>
-                    <option value="Wine Cask"></option>
-                    <option value="Fetească Neagră"></option>
-                    <option value="Rioja"></option>
-                    <option value="Sauternes"></option>
-                    <option value="Madeira"></option>
-                </datalist>
-                <datalist id="whisky-finishes">
-                    <option value="Sherry Oloroso"></option>
-                    <option value="Pedro Ximénez (PX)"></option>
-                    <option value="Ruby Port"></option>
-                    <option value="Tawny Port"></option>
-                    <option value="Amarone"></option>
-                    <option value="Rioja"></option>
-                    <option value="Fetească Neagră"></option>
-                    <option value="Sauternes"></option>
-                    <option value="Madeira"></option>
-                    <option value="Rum Cask"></option>
-                    <option value="Stout Cask"></option>
-                    <option value="Virgin Oak"></option>
-                </datalist>
-                <datalist id="countries">
-                    <option value="Schottland"></option>
-                    <option value="Irland"></option>
-                    <option value="USA"></option>
-                    <option value="Japan"></option>
-                    <option value="Deutschland"></option>
-                    <option value="Kanada"></option>
-                    <option value="Indien"></option>
-                    <option value="Taiwan"></option>
-                    <option value="Frankreich"></option>
-                    <option value="Australien"></option>
-                    <option value="Schweden"></option>
-                    <option value="Schweiz"></option>
-                    <option value="Österreich"></option>
-                </datalist>
-
-                <div style="background: #222; padding: 15px; border-radius: 8px; border: 1px dashed #444; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; gap: 15px;">
-                    <div style="flex: 1;">
-                        <label style="margin-top: 0; color: white; font-weight: bold;">Flaschen-Foto</label>
-                        <p style="margin: 3px 0 10px 0; font-size: 11px; color: #aaa;">Optional</p>
-                        <input type="file" id="w-image-input" accept="image/*" style="display: none;" onchange="previewImage(event)">
-                        <button class="btn-secondary" style="margin: 0; border-color: #3498db; color: #3498db; padding: 8px; font-size: 14px;" onclick="document.getElementById('w-image-input').click()">📷 Auswählen</button>
-                    </div>
-                    <div class="img-preview-container" style="margin: 0;">
-                        <img id="w-image-preview" src="" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid #444; display: none;">
-                    </div>
-                    <input type="hidden" id="w-image-hidden">
-                </div>
-
-                <div style="display: flex; justify-content: space-between; align-items: flex-end;">
-                    <label style="margin: 0;">Name</label>
-                    <button class="btn-secondary" style="margin: 0; padding: 4px 10px; font-size: 12px; width: auto; border-color: #f1c40f; color: #f1c40f; border-radius: 12px;" onclick="searchWhiskyBase()">🔍 Auf Whiskybase suchen</button>
-                </div>
-                <input type="text" id="w-name" list="known-whiskies" onchange="autoFillWhisky(this)">
-                
-                <label>Destille</label><input type="text" id="w-distillery" list="known-distilleries">
-                
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:1"><label>Fass</label><input type="text" id="w-cask" list="whisky-casks" placeholder="z.B. Ex-Bourbon"></div>
-                    <div style="flex:1"><label>Finish</label><input type="text" id="w-finish" list="whisky-finishes" placeholder="z.B. Rioja"></div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:1"><label>Art</label><input type="text" id="w-type" list="whisky-types"></div>
-                    <div style="flex:1"><label>Land</label><input type="text" id="w-country" list="countries"></div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:1"><label>Jahrgang</label><input type="number" id="w-vintage" placeholder="z.B. 1990" oninput="calculateAge()"></div>
-                    <div style="flex:1"><label>Abgefüllt</label><input type="number" id="w-bottled" placeholder="z.B. 2002" oninput="calculateAge()"></div>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <div style="flex:1"><label>Alter</label><input type="text" id="w-age" placeholder="z.B. 12 oder NAS"></div>
-                    <div style="flex:1"><label>Alk. %</label><input type="number" step="0.1" id="w-abv"></div>
-                </div>
-                
-                <label>🔗 Whiskybase Link (Optional)</label>
-                <input type="url" id="w-wb-link" placeholder="z.B. https://www.whiskybase.com/...">
-
-                <label>Zu welchem Flight gehört er?</label>
-                <input type="number" id="w-flight" value="1" min="1" style="border: 2px solid var(--accent-color);">
-            </div>
+            <h2 id="modal-whisky-title">Whisky eintragen</h2>
+            <datalist id="known-whiskies"></datalist>
+            <datalist id="known-distilleries"></datalist>
             
-            <div class="modal-footer">
+            <datalist id="whisky-types">
+                <option value="Single Malt Scotch"></option>
+                <option value="Blended Malt Scotch"></option>
+                <option value="Blended Scotch"></option>
+                <option value="Single Pot Still (Irish)"></option>
+                <option value="Bourbon"></option>
+                <option value="Rye Whiskey"></option>
+                <option value="Tennessee Whiskey"></option>
+                <option value="Single Grain"></option>
+                <option value="Corn Whiskey"></option>
+                <option value="Single Malt (Japan)"></option>
+                <option value="Single Malt (Deutschland)"></option>
+            </datalist>
+
+            <datalist id="countries">
+                <option value="Schottland"></option>
+                <option value="Irland"></option>
+                <option value="USA"></option>
+                <option value="Japan"></option>
+                <option value="Deutschland"></option>
+                <option value="Kanada"></option>
+                <option value="Indien"></option>
+                <option value="Taiwan"></option>
+                <option value="Frankreich"></option>
+                <option value="Australien"></option>
+                <option value="Schweden"></option>
+                <option value="Schweiz"></option>
+                <option value="Österreich"></option>
+            </datalist>
+
+            <label>Name</label><input type="text" id="w-name" list="known-whiskies" onchange="autoFillWhisky(this)">
+            <label>Destille</label><input type="text" id="w-distillery" list="known-distilleries">
+            <div style="display: flex; gap: 10px;">
+                <div style="flex:1"><label>Art</label><input type="text" id="w-type" list="whisky-types"></div>
+                <div style="flex:1"><label>Land</label><input type="text" id="w-country" list="countries"></div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <div style="flex:1"><label>Alter</label><input type="number" id="w-age"></div>
+                <div style="flex:1"><label>Alk. %</label><input type="number" step="0.1" id="w-abv"></div>
+            </div>
+            <label>Zu welchem Flight gehört er?</label>
+            <input type="number" id="w-flight" value="1" min="1" style="border: 2px solid var(--accent-color);">
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-secondary" onclick="closeModal('modal-whisky')">Abbrechen</button>
-                <button id="btn-save-whisky" class="btn-main" onclick="saveWhiskyFromModal()">Speichern</button>
+                <button class="btn-main" style="margin-top: 15px;" onclick="saveWhiskyFromModal()">Speichern</button>
             </div>
         </div>
     </div>
 
     <div id="modal-participant" class="modal">
         <div class="modal-content">
-            <div class="modal-body">
-                <h2 style="margin-top: 0;">Teilnehmer hinzufügen</h2>
-                <label>Name</label>
-                <input type="text" id="live-participant-name" list="known-participants" placeholder="Name">
-            </div>
-            <div class="modal-footer">
+            <h2>Teilnehmer hinzufügen</h2>
+            <label>Name</label>
+            <input type="text" id="live-participant-name" list="known-participants" placeholder="Name">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-secondary" onclick="closeModal('modal-participant')">Abbrechen</button>
-                <button class="btn-main" onclick="addLiveParticipant()">Hinzufügen</button>
+                <button class="btn-main" style="margin-top: 15px;" onclick="addLiveParticipant()">Hinzufügen</button>
             </div>
         </div>
     </div>
 
     <div id="modal-rating" class="modal">
         <div class="modal-content">
-            <div class="modal-body">
-                <h2 id="modal-rating-title" style="margin-top: 0;">Bewertung im Detail</h2>
-                <p id="modal-rating-subtitle" style="color: var(--secondary-text); margin-top: -10px;"></p>
-                <label>Geruch (Nase) - 0 bis 10</label><input type="number" id="r-nose" step="0.1" min="0" max="10">
-                <label>Geschmack - 0 bis 10</label><input type="number" id="r-taste" step="0.1" min="0" max="10">
-                <label>Abgang - 0 bis 10</label><input type="number" id="r-finish" step="0.1" min="0" max="10">
-                <label>Endwertung - 0 bis 10</label><input type="number" id="r-overall" step="0.1" min="0" max="10">
-                
-                <button class="btn-secondary" style="border-color: #e74c3c; color: #e74c3c; margin-top: 25px;" onclick="skipRatingFromModal()">🙈 Wertung aussetzen</button>
-            </div>
-            <div class="modal-footer">
+            <h2 id="modal-rating-title">Bewertung im Detail</h2>
+            <p id="modal-rating-subtitle" style="color: var(--secondary-text); margin-top: -10px;"></p>
+            <label>Geruch (Nase) - 0 bis 10</label><input type="number" id="r-nose" step="0.1" min="0" max="10">
+            <label>Geschmack - 0 bis 10</label><input type="number" id="r-taste" step="0.1" min="0" max="10">
+            <label>Abgang - 0 bis 10</label><input type="number" id="r-finish" step="0.1" min="0" max="10">
+            <label>Endwertung - 0 bis 10</label><input type="number" id="r-overall" step="0.1" min="0" max="10">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="btn-secondary" onclick="closeModal('modal-rating')">Abbrechen</button>
-                <button class="btn-main" onclick="saveRatingFromModal()">Speichern</button>
+                <button class="btn-main" style="margin-top: 15px;" onclick="saveRatingFromModal()">Speichern</button>
             </div>
-        </div>
-    </div>
-
-    <div id="modal-tasting-comments" class="modal">
-        <div class="modal-content">
-            <div class="modal-body">
-                <h2 style="margin-top: 0;">💬 Stimmen am Tisch</h2>
-                <p id="tasting-comments-subtitle" style="color: var(--secondary-text); font-size: 14px; margin-top: -10px;"></p>
-                
-                <div id="tasting-comments-list" style="margin-bottom: 15px;"></div>
-                
-                <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-                    <input type="text" id="t-comment-name" list="known-participants" placeholder="Name" style="width: 35%; margin: 0; padding: 8px; font-size: 14px;">
-                    <input type="text" id="t-comment-text" placeholder="Deine Stimme..." style="flex: 1; margin: 0; padding: 8px; font-size: 14px;">
-                    <button class="btn-main" style="margin: 0; width: auto; padding: 8px 15px;" onclick="addTastingComment()">➕</button>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn-secondary" style="width: 100%;" onclick="closeModal('modal-tasting-comments')">Schließen</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="modal-image-view" class="modal" style="display: none; align-items: center; justify-content: center; z-index: 200;" onclick="closeModal('modal-image-view')">
-        <div style="position: relative; max-width: 90%; max-height: 90%; text-align: center;">
-            <button class="btn-back" style="position: absolute; top: -15px; right: -15px; left: auto; background: var(--accent-color); color: white; border-radius: 50%; width: 35px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 20px; z-index: 10; border: 2px solid #1a1a1a;" onclick="closeModal('modal-image-view')">✕</button>
-            <img id="fullscreen-image" src="" style="max-width: 100%; max-height: 85vh; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.8); object-fit: contain;">
         </div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase53"></script>
+    <script src="app.js?v=firebase11"></script>
 </body>
 </html>
