@@ -27,21 +27,65 @@ window.onload = function() {
             if(data.tastings) localStorage.setItem('whiskyTastings', data.tastings);
             if(data.whiskies) localStorage.setItem('whiskyDB', data.whiskies);
             if(data.participants) localStorage.setItem('participantDB', data.participants);
+            if(data.icons) localStorage.setItem('participantIcons', data.icons);
             
+            initHats();
             if(document.getElementById('view-dashboard').style.display !== 'none') loadDashboard();
             updateParticipantDatalist();
         }
     });
     document.getElementById('setup-date').valueAsDate = new Date();
+    initHats();
 };
 
 function syncToCloud() {
     database.ref('dramscore_db').set({
         tastings: localStorage.getItem('whiskyTastings') || "[]",
         whiskies: localStorage.getItem('whiskyDB') || "[]",
-        participants: localStorage.getItem('participantDB') || "[]"
+        participants: localStorage.getItem('participantDB') || "[]",
+        icons: localStorage.getItem('participantIcons') || "{}"
     });
 }
+
+// ==========================================
+// HÜTE & ICONS (NEU)
+// ==========================================
+const HATS = ['🤠', '🎩', '🎓', '🧢', '👑', '🪖', '🕵️‍♂️', '🧑‍🍳', '🧑‍🔬', '🧙‍♂️', '🏴‍☠️', '🥷'];
+
+function initHats() {
+    let opts = HATS.map(h => `<option value="${h}">${h}</option>`).join('');
+    if(document.getElementById('setup-expert-icon')) document.getElementById('setup-expert-icon').innerHTML = opts;
+    if(document.getElementById('expert-change-icon')) document.getElementById('expert-change-icon').innerHTML = opts;
+}
+
+function updateSetupIcon() {
+    let p = document.getElementById('setup-expert-select').value;
+    let icons = JSON.parse(localStorage.getItem('participantIcons') || '{}');
+    if(p && icons[p]) {
+        document.getElementById('setup-expert-icon').value = icons[p];
+    } else {
+        document.getElementById('setup-expert-icon').value = '🤠';
+    }
+}
+
+function updateModalIcon() {
+    let p = document.getElementById('expert-change-select').value;
+    let icons = JSON.parse(localStorage.getItem('participantIcons') || '{}');
+    if(p && icons[p]) {
+        document.getElementById('expert-change-icon').value = icons[p];
+    } else {
+        document.getElementById('expert-change-icon').value = '🤠';
+    }
+}
+
+function saveParticipantIcon(name, icon) {
+    if(!name) return;
+    let icons = JSON.parse(localStorage.getItem('participantIcons') || '{}');
+    icons[name] = icon;
+    localStorage.setItem('participantIcons', JSON.stringify(icons));
+    syncToCloud();
+}
+
 
 // ==========================================
 // BILD-KOMPRESSOR & UPLOAD
@@ -68,55 +112,31 @@ async function compressAndUploadImage(file) {
                 const MAX_HEIGHT = 1200;
                 let width = img.width;
                 let height = img.height;
-
-                if (width > height) {
-                    if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
-                } else {
-                    if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
-                }
+                if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
+                else { if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; } }
                 canvas.width = width; canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                
                 const base64Data = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
-                
                 const formData = new FormData();
                 formData.append("image", base64Data);
-                
-                fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
-                    method: "POST",
-                    body: formData
-                })
-                .then(res => res.json())
-                .then(data => resolve(data.data.url))
-                .catch(err => reject(err));
+                fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, { method: "POST", body: formData })
+                .then(res => res.json()).then(data => resolve(data.data.url)).catch(err => reject(err));
             };
         };
     });
 }
 
 async function uploadGroupPhoto(event) {
-    let file = event.target.files[0];
-    if (!file) return;
-    
+    let file = event.target.files[0]; if (!file) return;
     let btn = document.getElementById('btn-group-photo');
     let status = document.getElementById('group-photo-status');
-    
-    let oldText = btn.innerText;
-    btn.innerText = "⏳ Lade Foto hoch...";
-    btn.disabled = true;
-    status.style.display = "none";
-    
+    btn.innerText = "⏳ Lade Foto hoch..."; btn.disabled = true; status.style.display = "none";
     try {
         let url = await compressAndUploadImage(file);
-        currentTasting.image = url; 
-        saveTasting(); 
-        btn.innerText = "📸 Foto ändern";
-        status.style.display = "block";
-    } catch(e) {
-        alert("Upload fehlgeschlagen!");
-        btn.innerText = oldText;
-    }
+        currentTasting.image = url; saveTasting(); 
+        btn.innerText = "📸 Foto ändern"; status.style.display = "block";
+    } catch(e) { alert("Upload fehlgeschlagen!"); btn.innerText = "📸 Gruppenfoto"; }
     btn.disabled = false;
 }
 
@@ -127,7 +147,7 @@ function updateGroupPhotoUI() {
         btn.innerText = "📸 Foto ändern";
         status.style.display = "block";
     } else {
-        btn.innerText = "📸 Gruppenfoto hinzufügen";
+        btn.innerText = "📸 Gruppenfoto";
         status.style.display = "none";
     }
 }
@@ -141,7 +161,7 @@ function showImageFullscreen(url) {
 // APP LOGIK
 // ==========================================
 
-let currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {}, comments: [], motto: '', expert: '' };
+let currentTasting = { id: null, number: '', name: '', date: '', image: '', participants: [], whiskies: [], ratings: {}, comments: [], motto: '', expert: '', expertIcon: '' };
 let editingWhiskyIndex = null;
 let currentRatingContext = { participant: null, whiskyIndex: null };
 let currentDetailWhisky = null; 
@@ -191,7 +211,10 @@ function addLiveParticipant() {
 
 function removeLiveParticipant(name) {
     if(confirm(`${name} entfernen?`)) {
-        if(name === currentTasting.expert) currentTasting.expert = '';
+        if(name === currentTasting.expert) {
+            currentTasting.expert = '';
+            currentTasting.expertIcon = '';
+        }
         currentTasting.participants = currentTasting.participants.filter(p => p !== name);
         if(currentTasting.ratings[name]) delete currentTasting.ratings[name];
         renderGrid();
@@ -223,7 +246,10 @@ function updateParticipantList() {
 }
 
 function removeParticipant(name) { 
-    if(name === currentTasting.expert) currentTasting.expert = '';
+    if(name === currentTasting.expert) {
+        currentTasting.expert = '';
+        currentTasting.expertIcon = '';
+    }
     currentTasting.participants = currentTasting.participants.filter(p => p !== name); 
     updateParticipantList(); 
 }
@@ -249,6 +275,7 @@ function updateExpertSelect(selectedExpertName = '') {
         if(p === selectedExpertName) option.selected = true;
         select.appendChild(option);
     });
+    updateSetupIcon();
 }
 
 function startTastingGrid() {
@@ -258,7 +285,10 @@ function startTastingGrid() {
     
     currentTasting.motto = document.getElementById('setup-motto').value || '';
     currentTasting.expert = document.getElementById('setup-expert-select').value || '';
+    currentTasting.expertIcon = document.getElementById('setup-expert-icon').value || '🤠';
     
+    if(currentTasting.expert) saveParticipantIcon(currentTasting.expert, currentTasting.expertIcon);
+
     if(!currentTasting.id) currentTasting.id = 't_' + Date.now();
     if(currentTasting.participants.length === 0) return alert("Bitte füge mindestens einen Teilnehmer hinzu!");
     
@@ -297,16 +327,20 @@ function openExpertChangeModal() {
     select.innerHTML = '<option value="">-- Keiner --</option>';
     currentTasting.participants.forEach(p => {
         const option = document.createElement('option'); 
-        option.value = p; 
-        option.innerText = p;
+        option.value = p; option.innerText = p;
         if(p === currentTasting.expert) option.selected = true;
         select.appendChild(option);
     });
+    updateModalIcon();
     document.getElementById('modal-change-expert').style.display = 'block';
 }
 
 function saveExpertChange() { 
     currentTasting.expert = document.getElementById('expert-change-select').value; 
+    currentTasting.expertIcon = document.getElementById('expert-change-icon').value || '🤠';
+    
+    if(currentTasting.expert) saveParticipantIcon(currentTasting.expert, currentTasting.expertIcon);
+
     updateExpertDisplay(); 
     renderGrid(); 
     saveTasting(); 
@@ -315,6 +349,7 @@ function saveExpertChange() {
 
 function updateExpertDisplay() { 
     document.getElementById('grid-expert-name').innerText = currentTasting.expert || 'Keiner festgelegt'; 
+    document.getElementById('grid-expert-icon-display').innerText = currentTasting.expertIcon || '🤠'; 
 }
 
 function renderGrid() {
@@ -354,7 +389,8 @@ function renderGrid() {
     let html = `<thead>${flightRow}${whiskyRow}</thead><tbody>`;
     currentTasting.participants.forEach(pName => {
         let isExpert = pName === currentTasting.expert;
-        let displayName = isExpert ? `<strong>🤠 ${pName}</strong>` : pName;
+        let icon = currentTasting.expertIcon || '🤠';
+        let displayName = isExpert ? `<strong>${icon} ${pName}</strong>` : pName;
 
         html += `<tr><td style="background:#222; position:sticky; left:0; z-index:2;" onclick="removeLiveParticipant('${pName}')">${displayName} <span style="font-size:10px; color:#666;">🗑️</span></td>`;
         cols.forEach(c => {
@@ -690,7 +726,6 @@ function loadFeed() {
     container.innerHTML = html;
 }
 
-// GEÄNDERT: loadDashboard sortiert jetzt nach Experten-Namen
 function loadDashboard() {
     const container = document.getElementById('tasting-list-container');
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
@@ -699,10 +734,9 @@ function loadDashboard() {
     
     let html = '';
     
-    // Alle verfügbaren Expertennamen auslesen
     let experts = [...new Set(tastings.map(t => t.expert || ''))];
+    let pIcons = JSON.parse(localStorage.getItem('participantIcons') || '{}');
     
-    // Sortieren: Namen zuerst, leere (Gemeinschaftliche) ans Ende
     experts.sort((a, b) => {
         if(a === '') return 1;
         if(b === '') return -1;
@@ -713,9 +747,9 @@ function loadDashboard() {
         let expertTastings = tastings.filter(t => (t.expert || '') === expert);
         if(expertTastings.length === 0) return;
 
-        let title = expert ? `🤠 Tastings von ${expert}` : `🥃 Gemeinschaftliche Tastings`;
+        let icon = pIcons[expert] || '🤠';
+        let title = expert ? `${icon} Tastings von ${expert}` : `🥃 Gemeinschaftliche Tastings`;
         
-        // Die neue Überschrift für den Experten-Block (ersetzt das alte "Deine Tastings")
         html += `<h2 style="margin-top: 35px; border-bottom: 1px solid #444; padding-bottom: 5px; color: var(--accent-color);">${title}</h2>`;
 
         let years = [...new Set(expertTastings.map(t => t.date.split('-')[0]))].sort((a, b) => b - a);
@@ -739,7 +773,8 @@ function loadDashboard() {
                 let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
                 let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
                 
-                let expertDisplay = t.expert ? ` | 🤠 ${t.expert}` : '';
+                let tIcon = t.expertIcon || pIcons[t.expert] || '🤠';
+                let expertDisplay = t.expert ? ` | ${tIcon} ${t.expert}` : '';
 
                 html += `<li class="tasting-item">
                     <strong>${numDisplay}${t.name}${groupImgIcon}</strong> <br>
@@ -935,8 +970,9 @@ function showTastingResults(id) {
     let dateDisplay = currentTasting.date ? ` • 📅 ${currentTasting.date.split('-').reverse().join('.')}` : "";
     document.getElementById('results-title').innerText = numDisplay + currentTasting.name + dateDisplay;
 
+    let icon = currentTasting.expertIcon || '🤠';
     let allP = currentTasting.participants || [];
-    let expertHtml = currentTasting.expert ? `🤠 Whisky-Experte: ${currentTasting.expert}` : 'Kein Experte festgelegt';
+    let expertHtml = currentTasting.expert ? `${icon} Whisky-Experte: ${currentTasting.expert}` : 'Kein Experte festgelegt';
     document.getElementById('results-expert').innerText = expertHtml;
 
     let nonExperts = allP.filter(p => p !== currentTasting.expert);
@@ -1054,6 +1090,7 @@ function importDatabase(event) {
         localStorage.setItem('whiskyTastings', JSON.stringify(d.tastings || []));
         localStorage.setItem('whiskyDB', JSON.stringify(d.whiskies || []));
         localStorage.setItem('participantDB', JSON.stringify(d.participants || []));
+        if(d.icons) localStorage.setItem('participantIcons', d.icons);
         syncToCloud(); location.reload();
     };
     reader.readAsText(event.target.files[0]);
