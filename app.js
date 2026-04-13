@@ -360,16 +360,17 @@ function calculateAge() {
     }
 }
 
-// GEÄNDERT: Die Whiskybase Suche bezieht jetzt auch Alter und Abgefüllt mit ein
+// GEÄNDERT: Die Whiskybase Suche bezieht jetzt Name, Destille, Alter, Jahrgang, Abgefüllt, Fass UND Finish mit ein
 function searchWhiskyBase() {
     let n = document.getElementById('w-name').value || '';
     let d = document.getElementById('w-distillery').value || '';
+    let a = document.getElementById('w-age').value || '';
     let v = document.getElementById('w-vintage').value || '';
     let b = document.getElementById('w-bottled').value || '';
-    let a = document.getElementById('w-age').value || '';
     let c = document.getElementById('w-cask').value || '';
+    let f = document.getElementById('w-finish').value || '';
     
-    let query = `site:whiskybase.com ${n} ${d} ${a} ${v} ${b} ${c}`.replace(/\s+/g, ' ').trim();
+    let query = `site:whiskybase.com ${n} ${d} ${a} ${v} ${b} ${c} ${f}`.replace(/\s+/g, ' ').trim();
     if(query === 'site:whiskybase.com') return alert('Bitte zuerst einen Namen oder eine Destille eintragen!');
     window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank');
 }
@@ -631,7 +632,7 @@ function loadDashboard() {
                 let cF = [];
                 if(winData && winData.whisky && winData.whisky.cask) cF.push(`Fass: ${winData.whisky.cask}`);
                 if(winData && winData.whisky && winData.whisky.finish) cF.push(`Finish: ${winData.whisky.finish}`);
-                let caskDashInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
+                let caskDashInfo = caskDashInfo = cF.length > 0 ? `<br><span style="font-size:12px; color:#aaa; font-style:italic;">${cF.join('<br>')}</span>` : "";
                 
                 let clickCard = (winData && winData.whisky) ? `onclick="showDetailCard('${encodeURIComponent(JSON.stringify(winData.whisky))}')" style="cursor:pointer;"` : "";
                 let imgIcon = (winData && winData.whisky && winData.whisky.image) ? ' 📸' : '';
@@ -739,26 +740,6 @@ function saveToMasterDB(w) { let db = JSON.parse(localStorage.getItem('whiskyDB'
 function autoFillWhisky(i) { let db = JSON.parse(localStorage.getItem('whiskyDB')) || []; let w = db.find(x => x.name === i.value); if(w) { ['distillery', 'cask', 'finish', 'type', 'country', 'age', 'abv', 'vintage', 'bottled', 'wbLink'].forEach(k => { if(document.getElementById('w-'+k)) document.getElementById('w-'+k).value = w[k] || ''; }); if(w.image) { document.getElementById('w-image-preview').src = w.image; document.getElementById('w-image-preview').style.display = "inline-block"; document.getElementById('w-image-hidden').value = w.image; } } }
 function updateDatalists() { let db = JSON.parse(localStorage.getItem('whiskyDB')) || []; document.getElementById('known-whiskies').innerHTML = db.map(w => `<option value="${w.name}"></option>`).join(''); let dists = [...new Set(db.map(w => w.distillery).filter(Boolean))]; document.getElementById('known-distilleries').innerHTML = dists.map(d => `<option value="${d}"></option>`).join(''); }
 
-function exportTastingToCSV(id) { 
-    let t = JSON.parse(localStorage.getItem('whiskyTastings')).find(x => x.id === id); 
-    let csv = "\uFEFFFlight;Whisky;Fass;Finish;Bild-Link;Whiskybase;Durchschnitt\n"; 
-    if(t.whiskies) { 
-        t.whiskies.forEach((w, i) => { 
-            let tot=0, c=0; 
-            if(t.participants) { 
-                t.participants.forEach(p => { 
-                    let r=t.ratings[p]?.[i]; 
-                    if(r && r.overall && !isNaN(parseFloat(r.overall))){tot+=parseFloat(r.overall); c++;} 
-                }); 
-            } 
-            let avg = c>0 ? (tot/c).toFixed(2) : "0,00"; 
-            csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.image || ''};${w.wbLink || ''};${avg.replace('.', ',')}\n`; 
-        }); 
-    } 
-    let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); 
-    a.download = `DramScore_${t.name}.csv`; a.click(); 
-}
-
 function deleteSingleTasting(id) { if(confirm("Tasting wirklich löschen?")) { let t = JSON.parse(localStorage.getItem('whiskyTastings')).filter(x => x.id !== id); localStorage.setItem('whiskyTastings', JSON.stringify(t)); syncToCloud(); loadDashboard(); } }
 function exportDatabase() { let data = { tastings: JSON.parse(localStorage.getItem('whiskyTastings')), whiskies: JSON.parse(localStorage.getItem('whiskyDB')), participants: JSON.parse(localStorage.getItem('participantDB')), icons: JSON.parse(localStorage.getItem('participantIcons') || '{}') }; let a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:"application/json"})); a.download = `DramScore_Backup.json`; a.click(); }
 function importDatabase(event) { let reader = new FileReader(); reader.onload = function(e) { let d = JSON.parse(e.target.result); localStorage.setItem('whiskyTastings', JSON.stringify(d.tastings || [])); localStorage.setItem('whiskyDB', JSON.stringify(d.whiskies || [])); localStorage.setItem('participantDB', JSON.stringify(d.participants || [])); if(d.icons) localStorage.setItem('participantIcons', JSON.stringify(d.icons)); syncToCloud(); location.reload(); }; reader.readAsText(event.target.files[0]); }
@@ -788,9 +769,25 @@ function exportAllTastingsToCSV() {
     a.click(); 
 }
 
-// ==========================================
-// HALL OF FAME / STATISTIKEN
-// ==========================================
+function exportTastingToCSV(id) { 
+    let t = JSON.parse(localStorage.getItem('whiskyTastings')).find(x => x.id === id); 
+    let csv = "\uFEFFFlight;Whisky;Fass;Finish;Bild-Link;Whiskybase;Durchschnitt\n"; 
+    if(t.whiskies) { 
+        t.whiskies.forEach((w, i) => { 
+            let tot=0, c=0; 
+            if(t.participants) { 
+                t.participants.forEach(p => { 
+                    let r=t.ratings[p]?.[i]; 
+                    if(r && r.overall && !isNaN(parseFloat(r.overall))){tot+=parseFloat(r.overall); c++;} 
+                }); 
+            } 
+            let avg = c>0 ? (tot/c).toFixed(2) : "0,00"; 
+            csv += `${w.flight || 1};${w.name};${w.cask || ''};${w.finish || ''};${w.image || ''};${w.wbLink || ''};${avg.replace('.', ',')}\n`; 
+        }); 
+    } 
+    let a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'})); 
+    a.download = `DramScore_${t.name}.csv`; a.click(); 
+}
 
 function loadStats() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let globalWhiskys = {}; let allParticipants = new Set();
@@ -811,10 +808,9 @@ function showParticipantStats() {
     tastings.forEach(t => { if(!t.participants || !t.participants.includes(pName) || !t.whiskies) return; t.whiskies.forEach((w, i) => { let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null; if(r && r.overall && !isNaN(parseFloat(r.overall))) { let score = parseFloat(r.overall); myWhiskys.push({ ...w, score: score, tasting: t.name, tastingId: t.id }); if(w.distillery) { if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 }; distStats[w.distillery].tot += score; distStats[w.distillery].count++; } } }); });
     if(myWhiskys.length === 0) { container.innerHTML = "<p>Keine Daten.</p>"; return; }
     let top10 = [...myWhiskys].sort((a,b) => b.score - a.score).slice(0, 10);
-    let bottom10 = [...myWhiskys].sort((a,b) => a.score - b.score).slice(0, 10);
     let bestDist = { name: '-', avg: 0 }; Object.keys(distStats).forEach(d => { let avg = distStats[d].tot / distStats[d].count; if(avg > bestDist.avg) bestDist = { name: d, avg: avg }; });
     let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;"><div>🥃 ${myWhiskys.length} bewertet</div><div style="color:#3498db; font-weight:bold;">${bestDist.name}</div><div style="font-size:12px; color:#aaa;">Liebling (Ø ${bestDist.avg.toFixed(2)})</div></div><h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
-    top10.forEach((w, idx) => { let bc = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444')); html += `<div class="result-card" style="border-color: ${bc};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}</strong><br><span style="font-size:11px; color:#999;">in: <span style="color:#3498db; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span></span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`; });
+    top10.forEach((w, idx) => { let bc = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444')); html += `<div class="result-card" style="border-color: ${bc};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}${w.age ? ' ('+w.age+'J)' : ''}${w.image ? ' 📸' : ''}</strong><br><span style="font-size:11px; color:#999;">in: <span style="color:#3498db; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span></span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`; });
     container.innerHTML = html;
 }
 
@@ -826,7 +822,7 @@ function loadCabinet() {
         let avg = w.count > 0 ? (w.tot / w.count).toFixed(2) : "0.00";
         let ageStr = w.age ? (isNaN(w.age) ? w.age : `${w.age}J`) : '-';
         let tStr = w.tastingsRef.map(tr => `<span style="color: #3498db; text-decoration: underline;" onclick="event.stopPropagation(); showTastingResults('${tr.id}')">${tr.label}</span>`).join(', ');
-        html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display: flex; gap: 15px;">${w.image ? `<img src="${w.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #555;">` : `<div style="width: 80px; height: 80px; border-radius: 8px; background: #222; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 24px;">🥃</div>`}<div style="flex: 1; text-align:left;"><h3 style="margin: 0;">${w.name}</h3><div style="font-size: 12px; color: #ccc;">${w.distillery || '-'}</div><div style="margin-top: 10px; font-size: 11px; color: #999; border-top: 1px solid #444; padding-top: 6px;">🗓️ ${tStr}</div></div><div class="score-badge" style="margin: 0; font-size: 16px;">Ø ${avg}</div></div></div>`;
+        html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display: flex; gap: 15px;">${w.image ? `<img src="${w.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">` : `<div style="width: 80px; height: 80px; border-radius: 8px; background: #222; display: flex; align-items: center; justify-content: center; font-size: 24px;">🥃</div>`}<div style="flex: 1; text-align:left;"><h3 style="margin: 0;">${w.name}</h3><div style="font-size: 12px; color: #ccc;">${w.distillery || '-'}</div><div style="margin-top: 10px; font-size: 11px; color: #999; border-top: 1px solid #444; padding-top: 6px;">🗓️ ${tStr}</div></div><div class="score-badge" style="margin: 0; font-size: 16px;">Ø ${avg}</div></div></div>`;
     });
     document.getElementById('cabinet-container').innerHTML = html || "<p>Schrank leer.</p>";
 }
