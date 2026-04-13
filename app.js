@@ -501,7 +501,6 @@ function updateWhiskyInAllDBs(updatedWhisky) {
     localStorage.setItem('whiskyTastings', JSON.stringify(t)); syncToCloud();
 }
 
-// GEÄNDERT: URL Scanner (Chamäleon Button)
 function showDetailCard(encodedObj) {
     currentDetailWhisky = JSON.parse(decodeURIComponent(encodedObj));
     let w = currentDetailWhisky;
