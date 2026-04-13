@@ -196,7 +196,10 @@ function updateParticipantList() {
 }
 
 function removeParticipant(name) { 
-    if(name === currentTasting.expert) { currentTasting.expert = ''; currentTasting.expertIcon = ''; }
+    if(name === currentTasting.expert) {
+        currentTasting.expert = '';
+        currentTasting.expertIcon = '';
+    }
     currentTasting.participants = currentTasting.participants.filter(p => p !== name); updateParticipantList(); 
 }
 
@@ -231,7 +234,10 @@ function addLiveParticipant() {
 
 function removeLiveParticipant(name) {
     if(confirm(`${name} entfernen?`)) {
-        if(name === currentTasting.expert) { currentTasting.expert = ''; currentTasting.expertIcon = ''; }
+        if(name === currentTasting.expert) {
+            currentTasting.expert = '';
+            currentTasting.expertIcon = '';
+        }
         currentTasting.participants = currentTasting.participants.filter(p => p !== name);
         if(currentTasting.ratings[name]) delete currentTasting.ratings[name];
         renderGrid();
@@ -354,7 +360,6 @@ function calculateAge() {
     }
 }
 
-// NEU: Globale Editier-Funktion
 function openGlobalWhiskyEdit() {
     closeModal('modal-whisky-details'); 
     editingWhiskyIndex = 'global';
@@ -378,7 +383,6 @@ function openGlobalWhiskyEdit() {
     document.getElementById('modal-whisky').style.display = "block";
 }
 
-// NEU: Globale Update Funktion für alle Tastings
 function updateWhiskyGlobally(oldW, newW) {
     let db = JSON.parse(localStorage.getItem('whiskyDB')) || [];
     let dbIndex = db.findIndex(w => isSameWhisky(w, oldW));
@@ -687,7 +691,7 @@ function showTastingResults(id) {
         let ageStr = r.age ? (isNaN(r.age) ? ` (${r.age})` : ` (${r.age}J)`) : '';
         let imgIcon = r.image ? ' 📸' : '';
         
-        pod.innerHTML += `<div class="result-card ${rankClass}" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(r))}')"><div style="font-size:14px; color:var(--secondary-text);">${i+1}. Platz</div><h3>${r.name}${ageStr}${imgIcon}</h3>${caskHtml}<div class="score-badge">Ø ${r.avg} Punkte</div></div>`;
+        pod.innerHTML += `<div class="result-card ${rankClass}" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(r))}')"><div style="font-size:14px; color:var(--secondary-text);">${i+1}. Platz</div><h3>${r.name}${ageStr}${imgIcon}</h3>${caskHtml}<div class="score-badge">Ø ${r.avg.toFixed(2)} Punkte</div></div>`;
     });
     renderResultsTastingComments(); navigateTo('view-results');
 }
@@ -758,6 +762,10 @@ function exportAllTastingsToCSV() {
     a.click(); 
 }
 
+// ==========================================
+// HALL OF FAME / STATISTIKEN
+// ==========================================
+
 function loadStats() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let globalWhiskys = {}; let allParticipants = new Set();
     tastings.forEach(t => { if(t.participants) t.participants.forEach(p => allParticipants.add(p)); if(t.whiskies) { t.whiskies.forEach((w, i) => { let key = w.name + '|' + (w.distillery || '') + '|' + (w.age || '') + '|' + (w.cask || '') + '|' + (w.finish || ''); if(!globalWhiskys[key]) globalWhiskys[key] = { ...w, tot: 0, count: 0 }; if(t.participants) { t.participants.forEach(p => { let r = t.ratings && t.ratings[p] ? t.ratings[p][i] : null; if(r && r.overall && !isNaN(parseFloat(r.overall))) { globalWhiskys[key].tot += parseFloat(r.overall); globalWhiskys[key].count++; } }); } }); } });
@@ -791,7 +799,7 @@ function loadCabinet() {
         let avg = w.count > 0 ? (w.tot / w.count).toFixed(2) : "0.00";
         let ageStr = w.age ? (isNaN(w.age) ? w.age : `${w.age}J`) : '-';
         let tStr = w.tastingsRef.map(tr => `<span style="color: #3498db; text-decoration: underline;" onclick="event.stopPropagation(); showTastingResults('${tr.id}')">${tr.label}</span>`).join(', ');
-        html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display: flex; gap: 15px;">${w.image ? `<img src="${w.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">` : `<div style="width: 80px; height: 80px; border-radius: 8px; background: #222; display: flex; align-items: center; justify-content: center; font-size: 24px;">🥃</div>`}<div style="flex: 1; text-align:left;"><h3 style="margin: 0;">${w.name}</h3><div style="font-size: 12px; color: #ccc;">${w.distillery || '-'}</div><div style="margin-top: 10px; font-size: 11px; color: #999; border-top: 1px solid #444; padding-top: 6px;">🗓️ ${tStr}</div></div><div class="score-badge" style="margin: 0; font-size: 16px;">Ø ${avg}</div></div></div>`;
+        html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w))}')"><div style="display: flex; gap: 15px;">${w.image ? `<img src="${w.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #555;">` : `<div style="width: 80px; height: 80px; border-radius: 8px; background: #222; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 24px;">🥃</div>`}<div style="flex: 1; text-align:left;"><h3 style="margin: 0;">${w.name}</h3><div style="font-size: 12px; color: #ccc;">${w.distillery || '-'}</div><div style="margin-top: 10px; font-size: 11px; color: #999; border-top: 1px solid #444; padding-top: 6px;">🗓️ ${tStr}</div></div><div class="score-badge" style="margin: 0; font-size: 16px;">Ø ${avg}</div></div></div>`;
     });
     document.getElementById('cabinet-container').innerHTML = html || "<p>Schrank leer.</p>";
 }
