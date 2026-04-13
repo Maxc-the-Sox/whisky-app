@@ -252,6 +252,8 @@
                     <div class="detail-grid">
                         <div><strong>Art</strong> <span id="detail-type">-</span></div>
                         <div><strong>Land</strong> <span id="detail-country">-</span></div>
+                        <div><strong>Jahrgang</strong> <span id="detail-vintage">-</span></div>
+                        <div><strong>Abgefüllt</strong> <span id="detail-bottled">-</span></div>
                         <div><strong>Alter</strong> <span id="detail-age">-</span></div>
                         <div><strong>Alkohol</strong> <span id="detail-abv">-</span></div>
                         <div style="grid-column: span 2;"><strong>Fass</strong> <span id="detail-cask">-</span></div>
@@ -360,6 +362,12 @@
                     <div style="flex:1"><label>Art</label><input type="text" id="w-type" list="whisky-types"></div>
                     <div style="flex:1"><label>Land</label><input type="text" id="w-country" list="countries"></div>
                 </div>
+                
+                <div style="display: flex; gap: 10px;">
+                    <div style="flex:1"><label>Jahrgang</label><input type="number" id="w-vintage" placeholder="z.B. 1990" oninput="calculateAge()"></div>
+                    <div style="flex:1"><label>Abgefüllt</label><input type="number" id="w-bottled" placeholder="z.B. 2002" oninput="calculateAge()"></div>
+                </div>
+
                 <div style="display: flex; gap: 10px;">
                     <div style="flex:1"><label>Alter</label><input type="text" id="w-age" placeholder="z.B. 12 oder NAS"></div>
                     <div style="flex:1"><label>Alk. %</label><input type="number" step="0.1" id="w-abv"></div>
@@ -438,6 +446,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase47"></script>
+    <script src="app.js?v=firebase49"></script>
 </body>
 </html>
