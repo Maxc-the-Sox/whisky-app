@@ -459,7 +459,7 @@ async function saveWhiskyFromModal() {
         wData.comments = currentDetailWhisky.comments || [];
         updateWhiskyGlobally(currentDetailWhisky, wData);
         btn.innerText = "Speichern"; btn.disabled = false; closeModal('modal-whisky');
-        showDetailCard(encodeURIComponent(JSON.stringify(wData)));
+        showDetailCard(encodeURIComponent(JSON.stringify(wData)).replace(/'/g, "%27"));
         if(document.getElementById('view-cabinet').style.display !== 'none') loadCabinet();
         if(document.getElementById('view-dashboard').style.display !== 'none') loadDashboard();
         if(document.getElementById('view-grid').style.display !== 'none') renderGrid();
@@ -654,7 +654,7 @@ function loadDashboard() {
                 let clickCard = (winData && winData.whisky) ? `onclick="showDetailCard('${encodeURIComponent(JSON.stringify(winData.whisky)).replace(/'/g, "%27")}')" style="cursor:pointer;"` : "";
                 let imgIcon = (winData && winData.whisky && winData.whisky.image) ? ' 📸' : '';
                 
-                let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${winData.score.toFixed(2)} Punkte</span></div>` : "";
+                let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${parseFloat(winData.score).toFixed(2)} Punkte</span></div>` : "";
                 
                 let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
                 let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
@@ -679,15 +679,7 @@ function loadDashboard() {
     container.innerHTML = html;
 }
 
-function openTastingComments(id) { currentCommentTastingId = id; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === id); if(!t) return; document.getElementById('tasting-comments-subtitle').innerText = t.name; renderTastingComments(); document.getElementById('modal-tasting-comments').style.display = 'block'; }
-function renderTastingComments() { let list = document.getElementById('tasting-comments-list'); list.innerHTML = ''; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === currentCommentTastingId); if (!t.comments || t.comments.length === 0) { list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen am Tisch vorhanden.</div>'; return; } t.comments.forEach(c => { let ts = c.timestamp || parseInt(c.id.split('_')[1]); list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text}</div><div class="comment-delete" onclick="deleteTastingComment('${c.id}')">🗑️</div></div>`; }); }
-function addTastingComment() { let nI = document.getElementById('t-comment-name'); let tI = document.getElementById('t-comment-text'); if(!nI.value || !tI.value) return alert("Bitte Name und deine Stimme eingeben!"); let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let idx = tastings.findIndex(x => x.id === currentCommentTastingId); if(idx === -1) return; if(!tastings[idx].comments) tastings[idx].comments = []; let now = Date.now(); tastings[idx].comments.push({ id: 'c_' + now, timestamp: now, name: nI.value.trim(), text: tI.value.trim() }); localStorage.setItem('whiskyTastings', JSON.stringify(tastings)); syncToCloud(); nI.value = ''; tI.value = ''; renderTastingComments(); if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); }
-function deleteTastingComment(id) { if(confirm("Eintrag wirklich löschen?")) { let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let tIndex = tastings.findIndex(x => x.id === currentCommentTastingId); if(tIndex === -1) return; tastings[tIndex].comments = tastings[tIndex].comments.filter(c => c.id !== id); localStorage.setItem('whiskyTastings', JSON.stringify(tastings)); syncToCloud(); renderTastingComments(); if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); } }
-
-function renderResultsTastingComments() { let list = document.getElementById('results-comments-list'); list.innerHTML = ''; if (!currentTasting.comments || currentTasting.comments.length === 0) { list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen zum Abend vorhanden.</div>'; return; } currentTasting.comments.forEach(c => { let ts = c.timestamp || parseInt(c.id.split('_')[1]); list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text}</div><div class="comment-delete" onclick="deleteResultsTastingComment('${c.id}')">🗑️</div></div>`; }); }
-function addResultsTastingComment() { let nI = document.getElementById('r-comment-name'); let tI = document.getElementById('r-comment-text'); if(!nI.value || !tI.value) return alert("Bitte Name und deine Stimme eingeben!"); if(!currentTasting.comments) currentTasting.comments = []; let now = Date.now(); currentTasting.comments.push({ id: 'c_' + now, timestamp: now, name: nI.value.trim(), text: tI.value.trim() }); saveTasting(); nI.value = ''; tI.value = ''; renderResultsTastingComments(); }
-function deleteResultsTastingComment(id) { if(confirm("Eintrag wirklich löschen?")) { currentTasting.comments = currentTasting.comments.filter(c => c.id !== id); saveTasting(); renderResultsTastingComments(); } }
-
+// GEÄNDERT: parseFloat eingebaut bei der Durchschnittsberechnung für showTastingResults
 function showTastingResults(id) {
     closeModal('modal-whisky-details'); 
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
@@ -722,7 +714,7 @@ function showTastingResults(id) {
     let res = currentTasting.whiskies.map((w, index) => {
         let tot = 0, count = 0;
         currentTasting.participants.forEach(p => { let r = currentTasting.ratings[p]?.[index]; if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; } });
-        w.avg = count > 0 ? (tot/count).toFixed(2) : 0; return w;
+        w.avg = count > 0 ? parseFloat((tot/count).toFixed(2)) : 0; return w;
     }).sort((a,b)=>b.avg - a.avg);
 
     const pod = document.getElementById('podium-container'); pod.innerHTML = '';
@@ -739,6 +731,16 @@ function showTastingResults(id) {
     });
     renderResultsTastingComments(); navigateTo('view-results');
 }
+
+function openTastingComments(id) { currentCommentTastingId = id; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === id); if(!t) return; document.getElementById('tasting-comments-subtitle').innerText = t.name; renderTastingComments(); document.getElementById('modal-tasting-comments').style.display = 'block'; }
+function renderTastingComments() { let list = document.getElementById('tasting-comments-list'); list.innerHTML = ''; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === currentCommentTastingId); if (!t.comments || t.comments.length === 0) { list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen am Tisch vorhanden.</div>'; return; } t.comments.forEach(c => { let ts = c.timestamp || parseInt(c.id.split('_')[1]); list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text}</div><div class="comment-delete" onclick="deleteTastingComment('${c.id}')">🗑️</div></div>`; }); }
+function addTastingComment() { let nI = document.getElementById('t-comment-name'); let tI = document.getElementById('t-comment-text'); if(!nI.value || !tI.value) return alert("Bitte Name und deine Stimme eingeben!"); let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let idx = tastings.findIndex(x => x.id === currentCommentTastingId); if(idx === -1) return; if(!tastings[idx].comments) tastings[idx].comments = []; let now = Date.now(); tastings[idx].comments.push({ id: 'c_' + now, timestamp: now, name: nI.value.trim(), text: tI.value.trim() }); localStorage.setItem('whiskyTastings', JSON.stringify(tastings)); syncToCloud(); nI.value = ''; tI.value = ''; renderTastingComments(); if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); }
+function deleteTastingComment(id) { if(confirm("Eintrag wirklich löschen?")) { let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let tIndex = tastings.findIndex(x => x.id === currentCommentTastingId); if(tIndex === -1) return; tastings[tIndex].comments = tastings[tIndex].comments.filter(c => c.id !== id); localStorage.setItem('whiskyTastings', JSON.stringify(tastings)); syncToCloud(); renderTastingComments(); if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); } }
+
+function renderResultsTastingComments() { let list = document.getElementById('results-comments-list'); list.innerHTML = ''; if (!currentTasting.comments || currentTasting.comments.length === 0) { list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen zum Abend vorhanden.</div>'; return; } currentTasting.comments.forEach(c => { let ts = c.timestamp || parseInt(c.id.split('_')[1]); list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text}</div><div class="comment-delete" onclick="deleteResultsTastingComment('${c.id}')">🗑️</div></div>`; }); }
+function addResultsTastingComment() { let nI = document.getElementById('r-comment-name'); let tI = document.getElementById('r-comment-text'); if(!nI.value || !tI.value) return alert("Bitte Name und deine Stimme eingeben!"); if(!currentTasting.comments) currentTasting.comments = []; let now = Date.now(); currentTasting.comments.push({ id: 'c_' + now, timestamp: now, name: nI.value.trim(), text: tI.value.trim() }); saveTasting(); nI.value = ''; tI.value = ''; renderResultsTastingComments(); }
+function deleteResultsTastingComment(id) { if(confirm("Eintrag wirklich löschen?")) { currentTasting.comments = currentTasting.comments.filter(c => c.id !== id); saveTasting(); renderResultsTastingComments(); } }
+
 
 function resumeTasting(id) {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
@@ -831,8 +833,8 @@ function showParticipantStats() {
     let top10 = [...myWhiskys].sort((a,b) => b.score - a.score).slice(0, 10);
     let bottom10 = [...myWhiskys].sort((a,b) => a.score - b.score).slice(0, 10);
     let bestDist = { name: '-', avg: 0 }; Object.keys(distStats).forEach(d => { let avg = distStats[d].tot / distStats[d].count; if(avg > bestDist.avg) bestDist = { name: d, avg: avg }; });
-    let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;"><div>🥃 ${myWhiskys.length} bewertet</div><div style="color:#3498db; font-weight:bold;">${bestDist.name}</div><div style="font-size:12px; color:#aaa;">Liebling (Ø ${bestDist.avg.toFixed(2)})</div></div><h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
-    top10.forEach((w, idx) => { let bc = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444')); html += `<div class="result-card" style="border-color: ${bc};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w)).replace(/'/g, "%27")}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}</strong><br><span style="font-size:11px; color:#999;">in: <span style="color:#3498db; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span></span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${w.score.toFixed(2)}</div></div></div>`; });
+    let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;"><div>🥃 ${myWhiskys.length} bewertet</div><div style="color:#3498db; font-weight:bold;">${bestDist.name}</div><div style="font-size:12px; color:#aaa;">Liebling (Ø ${parseFloat(bestDist.avg).toFixed(2)})</div></div><h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
+    top10.forEach((w, idx) => { let bc = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444')); html += `<div class="result-card" style="border-color: ${bc};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w)).replace(/'/g, "%27")}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}</strong><br><span style="font-size:11px; color:#999;">in: <span style="color:#3498db; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span></span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${parseFloat(w.score).toFixed(2)}</div></div></div>`; });
     container.innerHTML = html;
 }
 
