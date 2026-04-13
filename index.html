@@ -166,7 +166,7 @@
     <div id="modal-change-expert" class="modal">
         <div class="modal-content">
             <div class="modal-body">
-                <h2 style="margin-top: 0;">🤠 Experten wechseln</h2>
+                <h2 style="margin-top: 0;">Experten wechseln</h2>
                 <label>Person</label>
                 <select id="expert-change-select" onchange="updateModalIcon()"></select>
                 <label>Sein / Ihr Symbol</label>
@@ -360,7 +360,7 @@
 
                 <div style="display: flex; justify-content: space-between; align-items: flex-end;">
                     <label style="margin: 0;">Name</label>
-                    <button class="btn-secondary" style="margin: 0; padding: 4px 10px; font-size: 12px; width: auto; border-color: #f1c40f; color: #f1c40f; border-radius: 12px;" onclick="searchWhiskyBase()">🔍 Auf Whiskybase suchen</button>
+                    <button class="btn-secondary" style="margin: 0; padding: 4px 10px; font-size: 12px; width: auto; border-color: #f1c40f; color: #f1c40f; border-radius: 12px;" onclick="searchWhiskyBase()">🔍 Im Web suchen</button>
                 </div>
                 <input type="text" id="w-name" list="known-whiskies" onchange="autoFillWhisky(this)">
                 
@@ -383,8 +383,8 @@
                     <div style="flex:1"><label>Alk. %</label><input type="number" step="0.1" id="w-abv"></div>
                 </div>
                 
-                <label>🔗 Whiskybase Link (Optional)</label>
-                <input type="url" id="w-wbLink" placeholder="z.B. https://www.whiskybase.com/...">
+                <label>🔗 Weblink zur Flasche (Optional)</label>
+                <input type="url" id="w-wbLink" placeholder="z.B. https://www.whiskybase.com/... oder Shop">
 
                 <label>Zu welchem Flight gehört er?</label>
                 <input type="number" id="w-flight" value="1" min="1" style="border: 2px solid var(--accent-color);">
@@ -460,6 +460,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase56"></script>
+    <script src="app.js?v=firebase57"></script>
 </body>
 </html>
