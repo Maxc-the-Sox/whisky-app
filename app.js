@@ -679,7 +679,6 @@ function loadDashboard() {
     container.innerHTML = html;
 }
 
-// GEÄNDERT: showTastingResults mit neuem Podium-Design (V61)
 function showTastingResults(id) {
     closeModal('modal-whisky-details'); 
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
@@ -704,7 +703,6 @@ function showTastingResults(id) {
         mottoCont.innerHTML = `<details class="motto-details"><summary class="motto-summary">📜 Motto & Einleitung lesen</summary><div class="motto-text">${currentTasting.motto}</div></details>`;
     } else { mottoCont.innerHTML = ''; }
 
-    // Rankings berechnen
     let res = currentTasting.whiskies.map((w, index) => {
         let tot = 0, count = 0;
         currentTasting.participants.forEach(p => { let r = currentTasting.ratings[p]?.[index]; if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; } });
@@ -726,7 +724,6 @@ function showTastingResults(id) {
             
             let medalEmoji = isFirst ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : ""));
             
-            // Header fürs Mittelfeld
             if(i === 3 && res.length > 4) {
                 html += `<div class="middle-field-header"><span>Das solide Mittelfeld</span></div>`;
             }
@@ -851,6 +848,7 @@ function showParticipantStats() {
     tastings.forEach(t => { if(!t.participants || !t.participants.includes(pName) || !t.whiskies) return; t.whiskies.forEach((w, i) => { let r = t.ratings && t.ratings[pName] ? t.ratings[pName][i] : null; if(r && r.overall && !isNaN(parseFloat(r.overall))) { let score = parseFloat(r.overall); myWhiskys.push({ ...w, score: score, tasting: t.name, tastingId: t.id }); if(w.distillery) { if(!distStats[w.distillery]) distStats[w.distillery] = { tot: 0, count: 0 }; distStats[w.distillery].tot += score; distStats[w.distillery].count++; } } }); });
     if(myWhiskys.length === 0) { container.innerHTML = "<p>Keine Daten.</p>"; return; }
     let top10 = [...myWhiskys].sort((a,b) => b.score - a.score).slice(0, 10);
+    let bottom10 = [...myWhiskys].sort((a,b) => a.score - b.score).slice(0, 10);
     let bestDist = { name: '-', avg: 0 }; Object.keys(distStats).forEach(d => { let avg = distStats[d].tot / distStats[d].count; if(avg > bestDist.avg) bestDist = { name: d, avg: avg }; });
     let html = `<div style="background:#222; padding:15px; border-radius:8px; margin-bottom:20px; text-align:center; border: 1px solid #444;"><div>🥃 ${myWhiskys.length} bewertet</div><div style="color:#3498db; font-weight:bold;">${bestDist.name}</div><div style="font-size:12px; color:#aaa;">Lieblings-Destille (Ø ${parseFloat(bestDist.avg).toFixed(2)})</div></div><h3 style="color:#2ecc71; text-align:center;">🏆 Top 10</h3>`;
     top10.forEach((w, idx) => { let bc = idx === 0 ? '#f1c40f' : (idx === 1 ? '#bdc3c7' : (idx === 2 ? '#cd7f32' : '#444')); html += `<div class="result-card" style="border-color: ${bc};" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w)).replace(/'/g, "%27")}')"><div style="display:flex; justify-content:space-between; align-items:center;"><div style="text-align:left;"><strong>${w.name}</strong><br><span style="font-size:11px; color:#999;">in: <span style="color:#3498db; text-decoration:underline;" onclick="event.stopPropagation(); showTastingResults('${w.tastingId}')">${w.tasting}</span></span></div><div class="score-badge" style="background:#2ecc71; margin:0;">${parseFloat(w.score).toFixed(2)}</div></div></div>`; });
