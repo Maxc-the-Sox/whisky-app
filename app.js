@@ -679,76 +679,6 @@ function loadDashboard() {
     container.innerHTML = html;
 }
 
-function showTastingResults(id) {
-    closeModal('modal-whisky-details'); 
-    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
-    let foundTasting = tastings.find(t => t.id === id); if(!foundTasting) return;
-    currentTasting = JSON.parse(JSON.stringify(foundTasting)); 
-    if(!currentTasting.whiskies) currentTasting.whiskies = []; if(!currentTasting.participants) currentTasting.participants = []; if(!currentTasting.ratings) currentTasting.ratings = {}; if(!currentTasting.comments) currentTasting.comments = [];
-    
-    let dateDisp = currentTasting.date ? ` • 📅 ${currentTasting.date.split('-').reverse().join('.')}` : "";
-    document.getElementById('results-title').innerText = (currentTasting.number ? '#'+currentTasting.number+' ' : '') + currentTasting.name + dateDisp;
-    
-    let icon = currentTasting.expertIcon || '🤠';
-    let expertHtml = currentTasting.expert ? `${icon} Whisky-Experte: ${currentTasting.expert}` : 'Kein Experte festgelegt';
-    document.getElementById('results-expert').innerText = expertHtml;
-    let nonExperts = currentTasting.participants.filter(p => p !== currentTasting.expert);
-    document.getElementById('results-participants').innerText = `👥 Am Tisch (${currentTasting.participants.length}): ${nonExperts.join(', ')}`;
-
-    let groupPhoto = document.getElementById('results-group-photo');
-    if (currentTasting.image) { groupPhoto.src = currentTasting.image; groupPhoto.style.display = "block"; } else { groupPhoto.style.display = "none"; }
-
-    let mottoCont = document.getElementById('results-motto-container');
-    if(currentTasting.motto && currentTasting.motto.trim() !== '') {
-        mottoCont.innerHTML = `<details class="motto-details"><summary class="motto-summary">📜 Motto & Einleitung lesen</summary><div class="motto-text">${currentTasting.motto}</div></details>`;
-    } else { mottoCont.innerHTML = ''; }
-
-    let res = currentTasting.whiskies.map((w, index) => {
-        let tot = 0, count = 0;
-        currentTasting.participants.forEach(p => { let r = currentTasting.ratings[p]?.[index]; if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; } });
-        w.avg = count > 0 ? parseFloat((tot/count).toFixed(2)) : 0; return w;
-    }).sort((a,b)=>b.avg - a.avg);
-
-    const pod = document.getElementById('podium-container'); pod.innerHTML = '';
-    
-    if(res.length === 0) { pod.innerHTML = '<p style="text-align:center;">Noch keine Whiskys bewertet.</p>'; }
-    else {
-        let html = '';
-        res.forEach((r, i) => {
-            let isFirst = (i === 0);
-            let isPodium = (i < 3);
-            let isLast = (i === res.length - 1 && res.length > 1);
-            
-            let rankClass = isFirst ? "rank-1" : (i === 1 ? "rank-2" : (i === 2 ? "rank-3" : "middle-rank"));
-            if(isLast) rankClass = "rank-last";
-            
-            let medalEmoji = isFirst ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : ""));
-            
-            if(i === 3 && res.length > 4) {
-                html += `<div class="middle-field-header"><span>Das solide Mittelfeld</span></div>`;
-            }
-            
-            let cF = []; if(r.cask) cF.push(`Fass: ${r.cask}`); if(r.finish) cF.push(`Finish: ${r.finish}`);
-            let caskHtml = cF.length > 0 ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-bottom:8px;">${cF.join('<br>')}</div>` : "";
-            let ageStr = r.age ? (isNaN(r.age) ? ` (${r.age})` : ` (${r.age}J)`) : '';
-            let imgIcon = r.image ? ' 📸' : '';
-            
-            html += `<div class="result-card ${rankClass}" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(r)).replace(/'/g, "%27")}')">`;
-            
-            if(isLast) html += `<div class="lantern-label">🏮 Die rote Laterne des Abends</div>`;
-            
-            html += `<div style="font-size:14px; color:var(--secondary-text);">${medalEmoji} ${i+1}. Platz</div>
-                     <h3 style="margin: 5px 0;">${r.name}${ageStr}${imgIcon}</h3>
-                     ${caskHtml}
-                     <div class="${isFirst ? 'score-badge-large' : 'score-badge'}">Ø ${r.avg.toFixed(2)} Punkte</div>
-                     </div>`;
-        });
-        pod.innerHTML = html;
-    }
-    
-    renderResultsTastingComments(); navigateTo('view-results');
-}
-
 function openTastingComments(id) { currentCommentTastingId = id; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === id); if(!t) return; document.getElementById('tasting-comments-subtitle').innerText = t.name; renderTastingComments(); document.getElementById('modal-tasting-comments').style.display = 'block'; }
 function renderTastingComments() { let list = document.getElementById('tasting-comments-list'); list.innerHTML = ''; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === currentCommentTastingId); if (!t.comments || t.comments.length === 0) { list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen am Tisch vorhanden.</div>'; return; } t.comments.forEach(c => { let ts = c.timestamp || parseInt(c.id.split('_')[1]); list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text}</div><div class="comment-delete" onclick="deleteTastingComment('${c.id}')">🗑️</div></div>`; }); }
 function addTastingComment() { let nI = document.getElementById('t-comment-name'); let tI = document.getElementById('t-comment-text'); if(!nI.value || !tI.value) return alert("Bitte Name und deine Stimme eingeben!"); let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let idx = tastings.findIndex(x => x.id === currentCommentTastingId); if(idx === -1) return; if(!tastings[idx].comments) tastings[idx].comments = []; let now = Date.now(); tastings[idx].comments.push({ id: 'c_' + now, timestamp: now, name: nI.value.trim(), text: tI.value.trim() }); localStorage.setItem('whiskyTastings', JSON.stringify(tastings)); syncToCloud(); nI.value = ''; tI.value = ''; renderTastingComments(); if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); }
@@ -855,15 +785,34 @@ function showParticipantStats() {
     container.innerHTML = html;
 }
 
+// GEÄNDERT: Alter, Fass und Finish werden jetzt auch im Schrank bei jeder Karte mit angezeigt (V63)
 function loadCabinet() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let cabinetWhiskys = {};
     tastings.forEach(t => { if(t.whiskies) { t.whiskies.forEach((w, i) => { let key = w.name + '|' + (w.distillery || '') + '|' + (w.age || '') + '|' + (w.cask || '') + '|' + (w.finish || ''); if(!cabinetWhiskys[key]) { cabinetWhiskys[key] = { ...w, tot: 0, count: 0, tastingsRef: [], comments: w.comments || [] }; } else if (w.comments && w.comments.length > 0) { cabinetWhiskys[key].comments = w.comments; } let tLabel = t.number ? `#${t.number} ${t.name}` : t.name; if(!cabinetWhiskys[key].tastingsRef.find(tr => tr.id === t.id)) { cabinetWhiskys[key].tastingsRef.push({ id: t.id, label: tLabel }); } if(t.participants) { t.participants.forEach(p => { let r = t.ratings && t.ratings[p] ? t.ratings[p][i] : null; if(r && r.overall && !isNaN(parseFloat(r.overall))) { cabinetWhiskys[key].tot += parseFloat(r.overall); cabinetWhiskys[key].count++; } }); } }); } });
     let arr = Object.values(cabinetWhiskys).sort((a,b) => a.name.localeCompare(b.name)); let html = '';
     arr.forEach(w => {
         let avg = w.count > 0 ? (w.tot / w.count).toFixed(2) : "0.00";
-        let ageStr = w.age ? (isNaN(w.age) ? w.age : `${w.age}J`) : '-';
+        let ageStr = w.age ? (isNaN(w.age) ? ` (${w.age})` : ` (${w.age}J)`) : '';
+        
+        let cF = [];
+        if(w.cask) cF.push(`Fass: ${w.cask}`);
+        if(w.finish) cF.push(`Finish: ${w.finish}`);
+        let caskHtml = cF.length > 0 ? `<div style="font-size:11px; color:#aaa; font-style:italic; margin-top:4px;">${cF.join(' | ')}</div>` : "";
+        
         let tStr = w.tastingsRef.map(tr => `<span style="color: #3498db; text-decoration: underline;" onclick="event.stopPropagation(); showTastingResults('${tr.id}')">${tr.label}</span>`).join(', ');
-        html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w)).replace(/'/g, "%27")}')"><div style="display: flex; gap: 15px;">${w.image ? `<img src="${w.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #555;">` : `<div style="width: 80px; height: 80px; border-radius: 8px; background: #222; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 24px;">🥃</div>`}<div style="flex: 1; text-align:left;"><h3 style="margin: 0;">${w.name}</h3><div style="font-size: 12px; color: #ccc;">${w.distillery || '-'}</div><div style="margin-top: 10px; font-size: 11px; color: #999; border-top: 1px solid #444; padding-top: 6px;">🗓️ ${tStr}</div></div><div class="score-badge" style="margin: 0; font-size: 16px;">Ø ${avg}</div></div></div>`;
+        
+        html += `<div class="result-card cabinet-card" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(w)).replace(/'/g, "%27")}')">
+            <div style="display: flex; gap: 15px;">
+                ${w.image ? `<img src="${w.image}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid #555;">` : `<div style="width: 80px; height: 80px; border-radius: 8px; background: #222; border: 1px dashed #555; display: flex; align-items: center; justify-content: center; font-size: 24px;">🥃</div>`}
+                <div style="flex: 1; text-align:left;">
+                    <h3 style="margin: 0;">${w.name}${ageStr}</h3>
+                    <div style="font-size: 12px; color: #ccc;">${w.distillery || '-'}</div>
+                    ${caskHtml}
+                    <div style="margin-top: 10px; font-size: 11px; color: #999; border-top: 1px solid #444; padding-top: 6px;">🗓️ ${tStr}</div>
+                </div>
+                <div class="score-badge" style="margin: 0; font-size: 16px; height: fit-content;">Ø ${avg}</div>
+            </div>
+        </div>`;
     });
     document.getElementById('cabinet-container').innerHTML = html || "<p>Schrank leer.</p>";
 }
