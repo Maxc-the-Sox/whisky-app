@@ -83,10 +83,13 @@
             </div>
             <ul id="participant-list" class="tag-list"></ul>
 
-            <label>🤠 Whisky-Experte (Leitung)</label>
-            <select id="setup-expert-select">
-                <option value="">-- Zuerst Teilnehmer hinzufügen --</option>
-            </select>
+            <label>Whisky-Experte & Symbol</label>
+            <div style="display: flex; gap: 10px;">
+                <select id="setup-expert-select" style="flex: 1;" onchange="updateSetupIcon()">
+                    <option value="">-- Teilnehmer hinzufügen --</option>
+                </select>
+                <select id="setup-expert-icon" style="width: 80px; padding: 12px 5px; text-align: center;"></select>
+            </div>
 
             <button class="btn-main" onclick="startTastingGrid()">Zum Tasting-Tisch</button>
         </div>
@@ -110,7 +113,7 @@
                        style="background: transparent; border: none; color: var(--secondary-text); font-size: 14px; text-align: center; width: auto; margin: 0 auto; display: block;">
                 
                 <div id="grid-expert-display" style="text-align: center; color: #f1c40f; font-size: 14px; margin-top: 8px; cursor: pointer;" onclick="openExpertChangeModal()">
-                    🤠 Experte: <span id="grid-expert-name" style="text-decoration: underline; font-weight: bold;">-</span>
+                    <span id="grid-expert-icon-display">🤠</span> Experte: <span id="grid-expert-name" style="text-decoration: underline; font-weight: bold;">-</span>
                 </div>
 
                 <div style="margin-top: 15px; text-align: center; display: flex; justify-content: center; gap: 10px;">
@@ -163,8 +166,11 @@
     <div id="modal-change-expert" class="modal">
         <div class="modal-content">
             <div class="modal-body">
-                <h2 style="margin-top: 0;">🤠 Experten wechseln</h2>
-                <select id="expert-change-select"></select>
+                <h2 style="margin-top: 0;">Experten wechseln</h2>
+                <label>Person</label>
+                <select id="expert-change-select" onchange="updateModalIcon()"></select>
+                <label>Sein / Ihr Symbol</label>
+                <select id="expert-change-icon" style="text-align: center;"></select>
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary" onclick="closeModal('modal-change-expert')">Abbrechen</button>
@@ -432,6 +438,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase46"></script>
+    <script src="app.js?v=firebase47"></script>
 </body>
 </html>
