@@ -7,6 +7,66 @@
     <link rel="stylesheet" href="style.css">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <style>
+        /* NEUE PODIUM STYLES VERSION 61 */
+        .podium-section { margin-bottom: 30px; }
+        
+        /* Platz 1: Gold */
+        .result-card.rank-1 {
+            border: 2px solid #f1c40f !important;
+            background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
+            box-shadow: 0 0 15px rgba(241, 196, 15, 0.3);
+            transform: scale(1.02);
+            margin-bottom: 20px;
+        }
+        .result-card.rank-1 h3 { color: #f1c40f; font-size: 24px; }
+        
+        /* Platz 2 & 3: Silber & Bronze */
+        .result-card.rank-2 { border-color: #bdc3c7 !important; }
+        .result-card.rank-3 { border-color: #cd7f32 !important; }
+        
+        /* Mittelfeld */
+        .middle-field-header {
+            text-align: center;
+            color: #888;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 25px 0 15px;
+            border-bottom: 1px solid #333;
+            line-height: 0.1em;
+        }
+        .middle-field-header span { background: #1a1a1a; padding: 0 15px; }
+        
+        /* Rote Laterne */
+        .result-card.rank-last {
+            border: 2px solid #e74c3c !important;
+            background: rgba(231, 76, 60, 0.05);
+            margin-top: 30px;
+        }
+        .result-card.rank-last h3 { color: #e74c3c; }
+        .lantern-label {
+            color: #e74c3c;
+            font-weight: bold;
+            font-size: 12px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .score-badge-large {
+            font-size: 20px;
+            font-weight: bold;
+            background: var(--accent-color);
+            color: black;
+            padding: 5px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+    </style>
 </head>
 <body>
 
@@ -460,6 +520,6 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-database-compat.js"></script>
     
-    <script src="app.js?v=firebase60"></script>
+    <script src="app.js?v=firebase61"></script>
 </body>
 </html>
