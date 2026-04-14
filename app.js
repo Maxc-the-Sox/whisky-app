@@ -507,7 +507,7 @@ function showDetailCard(encodedObj) {
     
     let ageStr = w.age ? (isNaN(w.age) ? w.age : `${w.age} Jahre`) : '-';
     
-    document.getElementById('detail-name').innerText = w.name;
+    document.getElementById('detail-name').innerText = w.name || 'Unbekannt';
     document.getElementById('detail-distillery').innerText = w.distillery || '';
     document.getElementById('detail-type').innerText = w.type || '-';
     document.getElementById('detail-country').innerText = w.country || '-';
@@ -654,7 +654,7 @@ function loadDashboard() {
                 let clickCard = (winData && winData.whisky) ? `onclick="showDetailCard('${encodeURIComponent(JSON.stringify(winData.whisky)).replace(/'/g, "%27")}')" style="cursor:pointer;"` : "";
                 let imgIcon = (winData && winData.whisky && winData.whisky.image) ? ' 📸' : '';
                 
-                let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${parseFloat(winData.score).toFixed(2)} Punkte</span></div>` : "";
+                let winH = (winData && winData.whisky) ? `<div ${clickCard} style="margin-top: 8px; color:#f1c40f; font-size:14px; background:#222; padding:5px; border-radius:5px;">🏆 Sieger: ${winData.whisky.name}${imgIcon} ${caskDashInfo}<br><span style="color:#aaa; font-size:12px;">Ø ${Number(winData.score || 0).toFixed(2)} Punkte</span></div>` : "";
                 
                 let numDisplay = t.number ? `<span style="color:var(--accent-color);">#${t.number}</span> ` : "";
                 let groupImgIcon = t.image ? ` <span style="cursor:pointer;" onclick="showImageFullscreen('${t.image}')">📸</span>` : '';
@@ -679,12 +679,111 @@ function loadDashboard() {
     container.innerHTML = html;
 }
 
+function showTastingResults(id) {
+    closeModal('modal-whisky-details'); 
+    let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || [];
+    let foundTasting = tastings.find(t => t.id === id); 
+    if(!foundTasting) return;
+    
+    currentTasting = JSON.parse(JSON.stringify(foundTasting)); 
+    
+    let safeWhiskies = Array.isArray(currentTasting.whiskies) ? currentTasting.whiskies : [];
+    let safeParticipants = Array.isArray(currentTasting.participants) ? currentTasting.participants : [];
+    let safeRatings = currentTasting.ratings || {};
+    let safeComments = Array.isArray(currentTasting.comments) ? currentTasting.comments : [];
+    
+    currentTasting.whiskies = safeWhiskies;
+    currentTasting.participants = safeParticipants;
+    currentTasting.ratings = safeRatings;
+    currentTasting.comments = safeComments;
+    
+    let dateDisp = (typeof currentTasting.date === 'string' && currentTasting.date) ? ` • 📅 ${currentTasting.date.split('-').reverse().join('.')}` : "";
+    document.getElementById('results-title').innerText = (currentTasting.number ? '#'+currentTasting.number+' ' : '') + (currentTasting.name || 'Unbenannt') + dateDisp;
+    
+    let icon = currentTasting.expertIcon || '🤠';
+    let expertHtml = currentTasting.expert ? `${icon} Whisky-Experte: ${currentTasting.expert}` : 'Kein Experte festgelegt';
+    document.getElementById('results-expert').innerText = expertHtml;
+    
+    let nonExperts = safeParticipants.filter(p => p !== currentTasting.expert);
+    document.getElementById('results-participants').innerText = `👥 Am Tisch (${safeParticipants.length}): ${nonExperts.join(', ')}`;
+
+    let groupPhoto = document.getElementById('results-group-photo');
+    if (currentTasting.image) { groupPhoto.src = currentTasting.image; groupPhoto.style.display = "block"; } else { groupPhoto.style.display = "none"; }
+
+    let mottoCont = document.getElementById('results-motto-container');
+    if(currentTasting.motto && typeof currentTasting.motto === 'string' && currentTasting.motto.trim() !== '') {
+        mottoCont.innerHTML = `<details class="motto-details"><summary class="motto-summary">📜 Motto & Einleitung lesen</summary><div class="motto-text">${currentTasting.motto}</div></details>`;
+    } else { mottoCont.innerHTML = ''; }
+
+    let res = safeWhiskies.map((w, index) => {
+        let tot = 0, count = 0;
+        safeParticipants.forEach(p => { 
+            let r = safeRatings[p]?.[index]; 
+            if(r && r.overall && !isNaN(parseFloat(r.overall))) { tot += parseFloat(r.overall); count++; } 
+        });
+        w.avg = count > 0 ? parseFloat((tot/count).toFixed(2)) : 0; 
+        if (isNaN(w.avg)) w.avg = 0;
+        return w;
+    }).sort((a,b)=> (b.avg || 0) - (a.avg || 0));
+
+    const pod = document.getElementById('podium-container'); pod.innerHTML = '';
+    
+    if(res.length === 0) { pod.innerHTML = '<p style="text-align:center;">Noch keine Whiskys bewertet.</p>'; }
+    else {
+        let html = '';
+        res.forEach((r, i) => {
+            let isFirst = (i === 0);
+            let isPodium = (i < 3);
+            let isLast = (i === res.length - 1 && res.length > 1);
+            
+            let rankClass = isFirst ? "rank-1" : (i === 1 ? "rank-2" : (i === 2 ? "rank-3" : "middle-rank"));
+            if(isLast) rankClass = "rank-last";
+            
+            let medalEmoji = isFirst ? "🥇" : (i === 1 ? "🥈" : (i === 2 ? "🥉" : ""));
+            
+            if(i === 3 && res.length > 4) {
+                html += `<div class="middle-field-header"><span>Das solide Mittelfeld</span></div>`;
+            }
+            
+            let cF = []; if(r.cask) cF.push(`Fass: ${r.cask}`); if(r.finish) cF.push(`Finish: ${r.finish}`);
+            let caskHtml = cF.length > 0 ? `<div style="font-size:13px; color:#aaa; font-style:italic; margin-bottom:8px;">${cF.join('<br>')}</div>` : "";
+            let ageStr = r.age ? (isNaN(r.age) ? ` (${r.age})` : ` (${r.age}J)`) : '';
+            let imgIcon = r.image ? ' 📸' : '';
+            
+            html += `<div class="result-card ${rankClass}" onclick="showDetailCard('${encodeURIComponent(JSON.stringify(r)).replace(/'/g, "%27")}')">`;
+            
+            if(isLast) html += `<div class="lantern-label">🏮 Die rote Laterne des Abends</div>`;
+            
+            html += `<div style="font-size:14px; color:var(--secondary-text);">${medalEmoji} ${i+1}. Platz</div>
+                     <h3 style="margin: 5px 0;">${r.name || 'Unbekannt'}${ageStr}${imgIcon}</h3>
+                     ${caskHtml}
+                     <div class="${isFirst ? 'score-badge-large' : 'score-badge'}">Ø ${Number(r.avg || 0).toFixed(2)} Punkte</div>
+                     </div>`;
+        });
+        pod.innerHTML = html;
+    }
+    
+    renderResultsTastingComments(); 
+    navigateTo('view-results');
+}
+
 function openTastingComments(id) { currentCommentTastingId = id; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === id); if(!t) return; document.getElementById('tasting-comments-subtitle').innerText = t.name; renderTastingComments(); document.getElementById('modal-tasting-comments').style.display = 'block'; }
 function renderTastingComments() { let list = document.getElementById('tasting-comments-list'); list.innerHTML = ''; let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let t = tastings.find(x => x.id === currentCommentTastingId); if (!t.comments || t.comments.length === 0) { list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen am Tisch vorhanden.</div>'; return; } t.comments.forEach(c => { let ts = c.timestamp || parseInt(c.id.split('_')[1]); list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text}</div><div class="comment-delete" onclick="deleteTastingComment('${c.id}')">🗑️</div></div>`; }); }
 function addTastingComment() { let nI = document.getElementById('t-comment-name'); let tI = document.getElementById('t-comment-text'); if(!nI.value || !tI.value) return alert("Bitte Name und deine Stimme eingeben!"); let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let idx = tastings.findIndex(x => x.id === currentCommentTastingId); if(idx === -1) return; if(!tastings[idx].comments) tastings[idx].comments = []; let now = Date.now(); tastings[idx].comments.push({ id: 'c_' + now, timestamp: now, name: nI.value.trim(), text: tI.value.trim() }); localStorage.setItem('whiskyTastings', JSON.stringify(tastings)); syncToCloud(); nI.value = ''; tI.value = ''; renderTastingComments(); if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); }
 function deleteTastingComment(id) { if(confirm("Eintrag wirklich löschen?")) { let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let tIndex = tastings.findIndex(x => x.id === currentCommentTastingId); if(tIndex === -1) return; tastings[tIndex].comments = tastings[tIndex].comments.filter(c => c.id !== id); localStorage.setItem('whiskyTastings', JSON.stringify(tastings)); syncToCloud(); renderTastingComments(); if(document.getElementById('view-feed').style.display !== 'none') loadFeed(); } }
 
-function renderResultsTastingComments() { let list = document.getElementById('results-comments-list'); list.innerHTML = ''; if (!currentTasting.comments || currentTasting.comments.length === 0) { list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen zum Abend vorhanden.</div>'; return; } currentTasting.comments.forEach(c => { let ts = c.timestamp || parseInt(c.id.split('_')[1]); list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text}</div><div class="comment-delete" onclick="deleteResultsTastingComment('${c.id}')">🗑️</div></div>`; }); }
+function renderResultsTastingComments() { 
+    let list = document.getElementById('results-comments-list'); list.innerHTML = ''; 
+    let comments = Array.isArray(currentTasting.comments) ? currentTasting.comments : [];
+    if (comments.length === 0) { 
+        list.innerHTML = '<div style="font-size: 13px; color: #888; font-style: italic; text-align: center;">Noch keine Stimmen zum Abend vorhanden.</div>'; 
+        return; 
+    } 
+    comments.forEach(c => { 
+        let ts = c.timestamp || parseInt((c.id || '').split('_')[1]) || Date.now(); 
+        list.innerHTML += `<div class="comment-box"><div class="comment-author">${c.name || 'Anonym'} <span class="comment-time">${formatTime(ts)}</span></div><div class="comment-text">${c.text || ''}</div><div class="comment-delete" onclick="deleteResultsTastingComment('${c.id}')">🗑️</div></div>`; 
+    }); 
+}
 function addResultsTastingComment() { let nI = document.getElementById('r-comment-name'); let tI = document.getElementById('r-comment-text'); if(!nI.value || !tI.value) return alert("Bitte Name und deine Stimme eingeben!"); if(!currentTasting.comments) currentTasting.comments = []; let now = Date.now(); currentTasting.comments.push({ id: 'c_' + now, timestamp: now, name: nI.value.trim(), text: tI.value.trim() }); saveTasting(); nI.value = ''; tI.value = ''; renderResultsTastingComments(); }
 function deleteResultsTastingComment(id) { if(confirm("Eintrag wirklich löschen?")) { currentTasting.comments = currentTasting.comments.filter(c => c.id !== id); saveTasting(); renderResultsTastingComments(); } }
 
@@ -785,7 +884,6 @@ function showParticipantStats() {
     container.innerHTML = html;
 }
 
-// GEÄNDERT: Alter, Fass und Finish werden jetzt auch im Schrank bei jeder Karte mit angezeigt (V63)
 function loadCabinet() {
     let tastings = JSON.parse(localStorage.getItem('whiskyTastings')) || []; let cabinetWhiskys = {};
     tastings.forEach(t => { if(t.whiskies) { t.whiskies.forEach((w, i) => { let key = w.name + '|' + (w.distillery || '') + '|' + (w.age || '') + '|' + (w.cask || '') + '|' + (w.finish || ''); if(!cabinetWhiskys[key]) { cabinetWhiskys[key] = { ...w, tot: 0, count: 0, tastingsRef: [], comments: w.comments || [] }; } else if (w.comments && w.comments.length > 0) { cabinetWhiskys[key].comments = w.comments; } let tLabel = t.number ? `#${t.number} ${t.name}` : t.name; if(!cabinetWhiskys[key].tastingsRef.find(tr => tr.id === t.id)) { cabinetWhiskys[key].tastingsRef.push({ id: t.id, label: tLabel }); } if(t.participants) { t.participants.forEach(p => { let r = t.ratings && t.ratings[p] ? t.ratings[p][i] : null; if(r && r.overall && !isNaN(parseFloat(r.overall))) { cabinetWhiskys[key].tot += parseFloat(r.overall); cabinetWhiskys[key].count++; } }); } }); } });
